@@ -111922,14 +111922,6 @@ window.OSPOS_DATA_BUNDLE = {
     },
     {
       "sale_year": 2022,
-      "category": "chmsc",
-      "item_name": "CHMSC Sales",
-      "revenue": 86870,
-      "profit": 26061,
-      "id": 327866
-    },
-    {
-      "sale_year": 2022,
       "category": "BREAD",
       "item_name": "Angelina Medium Loaf",
       "revenue": 196629,
