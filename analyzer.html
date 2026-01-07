@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Category Analyzer - OSPOS Strategic Suite</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="ai.js?v=1.4"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; color: #1e293b; }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        .btn-press:active { transform: scale(0.95); }
+    </style>
+</head>
+<body class="min-h-screen p-8">
+    <div class="max-w-6xl mx-auto">
+        <!-- Header -->
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
+            <div>
+                <h1 class="text-3xl font-black text-slate-800 flex items-center gap-3">
+                    <div class="bg-rose-600 p-2 rounded-xl text-white shadow-lg">
+                        <i data-lucide="microscope"></i>
+                    </div>
+                    AI Category Analyzer
+                </h1>
+                <p class="text-slate-500 font-medium ml-12 -mt-1">Deep Contextual Audit & Correction</p>
+            </div>
+            <div class="flex items-center gap-3">
+                <button id="ai-settings-btn" class="p-2.5 bg-white border border-slate-200 rounded-xl shadow-sm hover:bg-slate-50 transition-all text-indigo-600 btn-press" title="AI Configuration">
+                    <i data-lucide="brain-circuit" class="w-5 h-5"></i>
+                </button>
+                <a href="index.html" class="px-4 py-2 bg-white border border-slate-200 rounded-xl font-bold text-sm text-slate-600 hover:bg-slate-50 transition-all shadow-sm flex items-center gap-2 btn-press">
+                    <i data-lucide="arrow-left" class="w-4 h-4"></i> Back to Dashboard
+                </a>
+            </div>
+        </div>
+
+        <!-- Controls -->
+        <div class="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm mb-8">
+            <div class="flex flex-col md:flex-row items-center justify-between gap-4">
+                <div>
+                    <h2 class="text-lg font-black text-slate-800">Audit Configuration</h2>
+                    <p class="text-xs text-slate-400 font-bold uppercase tracking-widest">Scan all categories for misclassified items</p>
+                </div>
+                <div class="flex gap-4">
+                    <button id="start-btn" class="px-6 py-3 bg-indigo-600 text-white rounded-xl font-black uppercase tracking-widest text-xs shadow-lg shadow-indigo-200 hover:bg-indigo-700 transition-all flex items-center gap-2 btn-press">
+                        <i data-lucide="play" class="w-4 h-4"></i> Start Audit
+                    </button>
+                    <button id="stop-btn" class="hidden px-6 py-3 bg-rose-600 text-white rounded-xl font-black uppercase tracking-widest text-xs shadow-lg shadow-rose-200 hover:bg-rose-700 transition-all flex items-center gap-2 btn-press">
+                        <i data-lucide="square" class="w-4 h-4"></i> Stop Audit
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Progress -->
+            <div id="progress-container" class="hidden mt-6 bg-slate-50 p-4 rounded-xl border border-slate-100">
+                <div class="flex justify-between text-xs font-bold text-slate-500 mb-2">
+                    <span id="progress-text">Initializing...</span>
+                    <span id="progress-pct">0%</span>
+                </div>
+                <div class="w-full bg-slate-200 rounded-full h-2 overflow-hidden">
+                    <div id="progress-bar" class="bg-indigo-500 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+                </div>
+                <div id="current-cat-display" class="mt-2 text-[10px] font-mono text-slate-400 text-right"></div>
+            </div>
+        </div>
+
+        <!-- Results -->
+        <div id="results-area" class="hidden space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div class="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
+                <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+                    <h3 class="font-black text-slate-800 flex items-center gap-2">
+                        <i data-lucide="alert-triangle" class="text-amber-500"></i> Detected Anomalies
+                    </h3>
+                    <button id="apply-fixes-btn" class="px-4 py-2 bg-emerald-500 text-white rounded-lg font-bold text-xs hover:bg-emerald-600 transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed btn-press">
+                        Apply Selected Fixes
+                    </button>
+                </div>
+                <div class="max-h-[600px] overflow-y-auto custom-scrollbar">
+                    <table class="w-full text-left text-sm">
+                        <thead class="bg-white sticky top-0 z-10 text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 shadow-sm">
+                            <tr>
+                                <th class="px-6 py-3 w-10"><input type="checkbox" id="select-all" checked class="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"></th>
+                                <th class="px-6 py-3">Item Name</th>
+                                <th class="px-6 py-3">Current Category</th>
+                                <th class="px-6 py-3 text-indigo-600">Suggested Category</th>
+                                <th class="px-6 py-3">Reasoning</th>
+                            </tr>
+                        </thead>
+                        <tbody id="results-body" class="divide-y divide-slate-50"></tbody>
+                    </table>
+                </div>
+                <div id="no-anomalies" class="hidden p-12 text-center text-slate-400 font-bold uppercase text-sm">
+                    <i data-lucide="check-circle" class="w-12 h-12 mx-auto mb-3 text-emerald-500 opacity-50"></i>
+                    No anomalies detected. Your data looks clean!
+                </div>
+            </div>
+        </div>
+
+        <!-- AI Settings Modal (Mirrors index.html) -->
+        <div id="ai-settings-modal" onclick="if(event.target === this) closeAISettings()" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div class="bg-white rounded-3xl shadow-2xl w-full max-w-md flex flex-col overflow-hidden animate-in fade-in zoom-in duration-200">
+                <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+                    <div>
+                        <h3 class="text-xl font-black text-slate-800 flex items-center gap-2"><i data-lucide="brain-circuit" class="w-5 h-5 text-indigo-600"></i> AI Configuration</h3>
+                        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">LLM Provider Settings</p>
+                    </div>
+                    <button onclick="closeAISettings()" class="p-2 hover:bg-slate-200 rounded-full transition-colors">
+                        <i data-lucide="x" class="w-6 h-6 text-slate-500"></i>
+                    </button>
+                </div>
+                <div class="p-6 space-y-4">
+                    <div><label class="text-[10px] font-black text-slate-400 uppercase mb-1 block">Provider</label><select id="ai-provider" class="w-full bg-slate-50 border-0 text-sm font-bold text-slate-700 rounded-xl px-4 py-3 outline-none ring-1 ring-slate-200 focus:ring-2 focus:ring-indigo-500"><option value="openai">OpenAI (Cloud)</option><option value="lmstudio">LM Studio (Local)</option><option value="custom">Custom / Other</option></select></div>
+                    <div><label class="text-[10px] font-black text-slate-400 uppercase mb-1 block">Base URL</label><input type="text" id="ai-base-url" placeholder="https://api.openai.com/v1" class="w-full px-4 py-3 bg-slate-50 border-0 rounded-xl text-sm font-bold outline-none ring-1 ring-slate-200 focus:ring-2 focus:ring-indigo-500"></div>
+                    <div><label class="text-[10px] font-black text-slate-400 uppercase mb-1 block">API Key</label><input type="password" id="ai-api-key" placeholder="sk-..." class="w-full px-4 py-3 bg-slate-50 border-0 rounded-xl text-sm font-bold outline-none ring-1 ring-slate-200 focus:ring-2 focus:ring-indigo-500"></div>
+                    <div><label class="text-[10px] font-black text-slate-400 uppercase mb-1 block">Model Name</label><input type="text" id="ai-model" placeholder="gpt-3.5-turbo" class="w-full px-4 py-3 bg-slate-50 border-0 rounded-xl text-sm font-bold outline-none ring-1 ring-slate-200 focus:ring-2 focus:ring-indigo-500"></div>
+                    <div class="flex gap-3 mt-4">
+                        <button id="test-ai-connection" class="flex-1 py-3 bg-slate-100 text-slate-600 rounded-xl font-black uppercase tracking-widest text-xs hover:bg-slate-200 transition-all btn-press">Test Connection</button>
+                        <button id="save-ai-settings" class="flex-1 py-3 bg-indigo-600 text-white rounded-xl font-black uppercase tracking-widest text-xs shadow-lg shadow-indigo-200 hover:bg-indigo-700 transition-all btn-press">Save Config</button>
+                    </div>
+                    <p id="ai-connection-status" class="text-center text-[10px] font-bold mt-2 min-h-[1.5em]"></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- DB Logic (Mirrors index.html) ---
+        const DB_NAME = 'OSPOS_Strategic_DB';
+        const STORE_NAME = 'rawData';
+        let db;
+        let data = [];
+
+        const initDB = () => new Promise((resolve) => {
+            const request = indexedDB.open(DB_NAME, 1);
+            request.onsuccess = (e) => { db = e.target.result; resolve(); };
+            request.onerror = () => alert("Failed to open database.");
+        });
+
+        const loadFromDB = () => new Promise((resolve) => {
+            const tx = db.transaction(STORE_NAME, 'readonly');
+            const store = tx.objectStore(STORE_NAME);
+            const req = store.getAll();
+            req.onsuccess = () => resolve(req.result);
+        });
+
+        const saveToDB = async (dataArray) => {
+            const tx = db.transaction(STORE_NAME, 'readwrite');
+            const store = tx.objectStore(STORE_NAME);
+            store.clear();
+            dataArray.forEach(item => store.add(item));
+            return new Promise(r => tx.oncomplete = r);
+        };
+
+        // --- AI Logic ---
+        const callAI = async (config, prompt) => {
+            const body = {
+                model: config.model || 'gpt-3.5-turbo',
+                messages: [{ role: 'user', content: prompt }],
+                temperature: 0.1
+            };
+            try {
+                const response = await fetch(config.baseUrl + '/chat/completions', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${config.apiKey || ''}` },
+                    body: JSON.stringify(body)
+                });
+                if (!response.ok) throw new Error(`API Error: ${response.status}`);
+                const json = await response.json();
+                const content = json.choices[0].message.content;
+                return JSON.parse(content.replace(/```json/g, '').replace(/```/g, '').trim());
+            } catch (e) {
+                console.error("AI Error:", e);
+                return [];
+            }
+        };
+
+        const identifyOutliers = async (category, items) => {
+            const config = typeof AI !== 'undefined' ? AI.getConfig() : null;
+            if (!config) throw new Error("AI not configured. Please configure it in the main dashboard.");
+
+            const prompt = `
+                I have a list of retail items that are currently categorized as "${category}".
+                Identify any items that clearly do NOT belong in this category.
+                
+                Items: ${JSON.stringify(items)}
+                
+                Return ONLY a valid JSON array of strings containing the names of the outlier items.
+                Example: ["Item A", "Item B"]
+                If all items belong, return [].
+            `;
+            return await callAI(config, prompt);
+        };
+
+        const classifyItems = async (items, allCategories) => {
+            const config = typeof AI !== 'undefined' ? AI.getConfig() : null;
+            const prompt = `
+                I have a list of items that are miscategorized.
+                Here is the list of valid categories: ${JSON.stringify(allCategories)}.
+                
+                Items to classify: ${JSON.stringify(items)}
+                
+                For each item, select the best matching category from the valid list.
+                Return ONLY a valid JSON array of objects:
+                [ { "item": "Item Name", "new_category": "Category Name", "reason": "Brief reason" } ]
+            `;
+            return await callAI(config, prompt);
+        };
+
+        // --- App Logic ---
+        let anomalies = [];
+        let isAuditing = false;
+        
+        // Global for modal
+        const closeAISettings = () => document.getElementById('ai-settings-modal').classList.add('hidden');
+
+        const startAudit = async () => {
+            const config = typeof AI !== 'undefined' ? AI.getConfig() : null;
+            if (!config || (config.provider === 'openai' && !config.apiKey)) {
+                alert("AI Configuration missing. Please configure AI settings.");
+                document.getElementById('ai-settings-modal').classList.remove('hidden');
+                return;
+            }
+
+            const btn = document.getElementById('start-btn');
+            const stopBtn = document.getElementById('stop-btn');
+            const progressDiv = document.getElementById('progress-container');
+            const progressBar = document.getElementById('progress-bar');
+            const progressText = document.getElementById('progress-text');
+            const progressPct = document.getElementById('progress-pct');
+            const catDisplay = document.getElementById('current-cat-display');
+
+            btn.disabled = true;
+            btn.classList.add('opacity-50', 'cursor-not-allowed');
+            stopBtn.classList.remove('hidden');
+            progressDiv.classList.remove('hidden');
+            document.getElementById('results-area').classList.add('hidden');
+            anomalies = [];
+            isAuditing = true;
+
+            const categories = [...new Set(data.map(d => d.category))].filter(c => c).sort();
+            const total = categories.length;
+
+            for (let i = 0; i < total; i++) {
+                if (!isAuditing) break;
+                const cat = categories[i];
+                const pct = Math.round(((i) / total) * 100);
+                progressBar.style.width = `${pct}%`;
+                progressPct.innerText = `${pct}%`;
+                progressText.innerText = `Analyzing Category ${i + 1}/${total}`;
+                catDisplay.innerText = `Scanning: ${cat}`;
+
+                // Get items for this category
+                const catItems = data.filter(d => d.category === cat).map(d => d.item_name).filter(n => n);
+                const uniqueItems = [...new Set(catItems)];
+
+                // Step 2: Identify Outliers (Chunked)
+                let potentialOutliers = [];
+                const batchSize = 50;
+                for (let j = 0; j < uniqueItems.length; j += batchSize) {
+                    if (!isAuditing) break;
+                    const batch = uniqueItems.slice(j, j + batchSize);
+                    try {
+                        const outliers = await identifyOutliers(cat, batch);
+                        if (Array.isArray(outliers)) potentialOutliers.push(...outliers);
+                    } catch (err) { console.warn(`Failed to identify batch in ${cat}`, err); }
+                }
+
+                // Step 3: Classify Outliers (Chunked)
+                if (potentialOutliers.length > 0 && isAuditing) {
+                    const classBatch = 20;
+                    for (let k = 0; k < potentialOutliers.length; k += classBatch) {
+                        if (!isAuditing) break;
+                        const batch = potentialOutliers.slice(k, k + classBatch);
+                        try {
+                            const results = await classifyItems(batch, categories);
+                            if (Array.isArray(results)) {
+                                results.forEach(res => {
+                                    if (data.some(d => d.item_name === res.item && d.category === cat)) {
+                                        anomalies.push({ ...res, current_category: cat });
+                                    }
+                                });
+                            }
+                        } catch (err) { console.warn(`Failed to classify batch in ${cat}`, err); }
+                    }
+                }
+            }
+
+            if (isAuditing) {
+                progressBar.style.width = '100%';
+                progressPct.innerText = '100%';
+                progressText.innerText = 'Audit Complete';
+            } else {
+                progressText.innerText = 'Audit Stopped';
+            }
+            catDisplay.innerText = `Found ${anomalies.length} anomalies`;
+            
+            setTimeout(() => {
+                renderResults();
+                btn.disabled = false;
+                btn.classList.remove('opacity-50', 'cursor-not-allowed');
+                stopBtn.classList.add('hidden');
+                isAuditing = false;
+            }, 500);
+        };
+
+        const renderResults = () => {
+            const container = document.getElementById('results-area');
+            const tbody = document.getElementById('results-body');
+            const noData = document.getElementById('no-anomalies');
+            
+            container.classList.remove('hidden');
+            tbody.innerHTML = '';
+
+            if (anomalies.length === 0) {
+                noData.classList.remove('hidden');
+                document.getElementById('apply-fixes-btn').classList.add('hidden');
+                return;
+            }
+
+            noData.classList.add('hidden');
+            document.getElementById('apply-fixes-btn').classList.remove('hidden');
+
+            tbody.innerHTML = anomalies.map((a, idx) => `
+                <tr class="hover:bg-slate-50 transition-colors group">
+                    <td class="px-6 py-4"><input type="checkbox" class="anomaly-check rounded border-slate-300 text-indigo-600 focus:ring-indigo-500" data-idx="${idx}" checked></td>
+                    <td class="px-6 py-4 font-bold text-slate-700">${a.item}</td>
+                    <td class="px-6 py-4 text-slate-500 text-xs line-through decoration-rose-300">${a.current_category}</td>
+                    <td class="px-6 py-4 text-indigo-600 font-bold text-xs flex items-center gap-2"><i data-lucide="arrow-right" class="w-3 h-3"></i> ${a.new_category}</td>
+                    <td class="px-6 py-4 text-slate-400 text-xs italic">${a.reason}</td>
+                </tr>
+            `).join('');
+            lucide.createIcons();
+        };
+
+        const applyFixes = async () => {
+            const checks = document.querySelectorAll('.anomaly-check:checked');
+            if (checks.length === 0) return alert("No items selected.");
+            if (!confirm(`Apply fixes to ${checks.length} items?`)) return;
+
+            checks.forEach(chk => {
+                const idx = parseInt(chk.dataset.idx);
+                const fix = anomalies[idx];
+                // Update all instances of this item in the DB
+                data.forEach(d => {
+                    if (d.item_name === fix.item && d.category === fix.current_category) {
+                        d.category = fix.new_category;
+                    }
+                });
+            });
+
+            await saveToDB(data);
+            alert("Database updated successfully!");
+            location.reload(); // Refresh to clear state
+        };
+
+        // --- Init ---
+        window.onload = async () => {
+            await initDB();
+            data = await loadFromDB();
+            lucide.createIcons();
+            
+            document.getElementById('start-btn').onclick = startAudit;
+            document.getElementById('stop-btn').onclick = () => {
+                isAuditing = false;
+                document.getElementById('progress-text').innerText = "Stopping...";
+            };
+            document.getElementById('apply-fixes-btn').onclick = applyFixes;
+            document.getElementById('select-all').onchange = (e) => {
+                document.querySelectorAll('.anomaly-check').forEach(c => c.checked = e.target.checked);
+            };
+            document.getElementById('ai-settings-btn').onclick = () => {
+                document.getElementById('ai-settings-modal').classList.remove('hidden');
+            };
+            
+            // Init AI Settings UI
+            const state = { aiConfig: AI.getConfig() };
+            if (AI.init) AI.init(state);
+        };
+    </script>
+</body>
+</html>

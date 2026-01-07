@@ -1,0 +1,2381 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OSPOS Strategic Suite - Pro Edition</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/chart.js@3.9.1/dist/chart.min.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://unpkg.com/chartjs-chart-treemap@2.0.2/dist/chartjs-chart-treemap.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-chart-sunburst@1.1.11/dist/chartjs-chart-sunburst.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/hammer.js/2.0.8/hammer.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-zoom/1.2.1/chartjs-plugin-zoom.min.js"></script>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/fuse.js@6.6.2"></script>
+    <script src="exports/ospos_data.js"></script>
+    <script src="ai.js?v=1.4"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+        :root { --bg-main: #f8fafc; --card-bg: #ffffff; --text-main: #1e293b; --border-color: #e2e8f0; }
+        .dark { --bg-main: #0f172a; --card-bg: #1e293b; --text-main: #f1f5f9; --border-color: #334155; }
+        
+        body { font-family: 'Inter', sans-serif; background-color: var(--bg-main); color: var(--text-main); transition: all 0.3s ease; }
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        .sort-header { cursor: pointer; user-select: none; transition: all 0.2s; }
+        .sort-header:hover { background-color: #f1f5f9; color: #4f46e5; }
+        .tab-active { background-color: white !important; color: #4f46e5 !important; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); }
+        .dark .tab-active { background-color: #334155 !important; color: #818cf8 !important; }
+        .metric-active-profit { background-color: #10b981 !important; color: white !important; }
+        .metric-active-revenue { background-color: #4f46e5 !important; color: white !important; }
+        .drilldown-active { border-left: 4px solid #6366f1 !important; background-color: #f5f3ff !important; }
+        .dark .drilldown-active { background-color: #1e1b4b !important; }
+        
+        .card-animate { transition: transform 0.2s ease, box-shadow 0.2s ease; }
+        .card-animate:hover { transform: translateY(-2px); box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1); }
+        .btn-press:active { transform: scale(0.95); }
+        
+        .bg-white { background-color: var(--card-bg) !important; }
+        .border-slate-200 { border-color: var(--border-color) !important; }
+        .text-slate-800 { color: var(--text-main) !important; }
+    </style>
+</head>
+<body class="min-h-screen p-4 md:p-8">
+
+    <div class="max-w-[1600px] mx-auto">
+        <!-- Header -->
+        <header class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
+            <div>
+                <h1 class="text-3xl font-black flex items-center gap-3 tracking-tight">
+                    <div class="bg-indigo-600 p-2 rounded-xl text-white shadow-lg">
+                        <i data-lucide="shield-check"></i>
+                    </div>
+                    OSPOS Strategic Suite
+                </h1>
+                <p class="text-slate-500 font-medium ml-12 -mt-1 tracking-tight">Master-Detail Layout • IndexedDB • Linear Regression Trends</p>
+            </div>
+
+            <div class="flex items-center gap-3">
+                <button id="ai-settings-btn" class="p-2.5 bg-white border border-slate-200 rounded-xl shadow-sm hover:bg-slate-50 transition-all text-indigo-600 btn-press" title="AI Configuration">
+                    <i data-lucide="brain-circuit" class="w-5 h-5"></i>
+                </button>
+                <button id="dark-mode-toggle" class="p-2.5 bg-white border border-slate-200 rounded-xl shadow-sm hover:bg-slate-50 transition-all btn-press">
+                    <i data-lucide="moon" class="w-5 h-5 text-slate-600"></i>
+                </button>
+                <div class="flex bg-slate-200 p-1 rounded-xl shadow-inner">
+                    <button id="tab-analytics" class="px-4 py-1.5 rounded-lg text-xs font-bold transition-all tab-active btn-press">Analytics</button>
+                    <button id="tab-matrix" class="px-4 py-1.5 rounded-lg text-xs font-bold transition-all text-slate-500 hover:text-slate-700 btn-press">Strategic Matrix</button>
+                    <button id="tab-seasonality" class="px-4 py-1.5 rounded-lg text-xs font-bold transition-all text-slate-500 hover:text-slate-700 btn-press">Seasonality</button>
+                    <button id="tab-associations" class="px-4 py-1.5 rounded-lg text-xs font-bold transition-all text-slate-500 hover:text-slate-700 btn-press">Associations</button>
+                </div>
+                <button id="open-cat-mgr" class="p-2.5 bg-white border border-slate-200 rounded-xl shadow-sm hover:bg-slate-50 transition-all text-amber-600 btn-press" title="Category Manager">
+                    <i data-lucide="tags" class="w-5 h-5"></i>
+                </button>
+                <button id="open-item-mgr" class="p-2.5 bg-white border border-slate-200 rounded-xl shadow-sm hover:bg-slate-50 transition-all text-emerald-600 btn-press" title="Item Manager">
+                    <i data-lucide="package-search" class="w-5 h-5"></i>
+                </button>
+                <a href="analyzer.html" class="p-2.5 bg-white border border-slate-200 rounded-xl shadow-sm hover:bg-slate-50 transition-all text-rose-600 btn-press flex items-center justify-center" title="AI Category Analyzer">
+                    <i data-lucide="microscope" class="w-5 h-5"></i>
+                </a>
+                <button onclick="openImportModal()" class="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-xl shadow-sm hover:bg-slate-50 cursor-pointer transition-all text-indigo-600 btn-press">
+                    <i data-lucide="database" class="w-4 h-4"></i>
+                    <span class="text-sm font-bold">Data Manager</span>
+                </button>
+                <button id="clear-data" class="p-2.5 text-slate-400 hover:text-rose-600 transition-colors btn-press">
+                    <i data-lucide="refresh-ccw" class="w-5 h-5"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- Global Filters -->
+        <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm mb-8 flex flex-wrap items-center gap-6">
+            <div class="flex bg-slate-100 p-1 rounded-xl">
+                <button id="view-category" class="px-4 py-1.5 rounded-lg text-[10px] font-black uppercase transition-all text-slate-500 btn-press">Category Mode</button>
+                <button id="view-item" class="px-4 py-1.5 rounded-lg text-[10px] font-black uppercase transition-all tab-active btn-press">Item Mode</button>
+            </div>
+            
+            <div id="metric-toggle-container" class="flex bg-slate-100 p-1 rounded-xl">
+                <button id="metric-profit" class="px-4 py-1.5 rounded-lg text-[10px] font-black uppercase transition-all metric-active-profit btn-press">PROFIT</button>
+                <button id="metric-revenue" class="px-4 py-1.5 rounded-lg text-[10px] font-black uppercase transition-all text-slate-500 btn-press">REVENUE</button>
+            </div>
+
+            <div class="flex items-center gap-2">
+                <span class="text-[10px] font-black text-slate-400 uppercase">Snapshot:</span>
+                <select id="year-select" class="bg-slate-50 border-0 text-xs font-bold text-slate-700 rounded-lg px-3 py-1 outline-none ring-1 ring-slate-200 focus:ring-2 focus:ring-indigo-500">
+                    <option value="all">Lifetime Combined</option>
+                </select>
+                <button id="exclude-year-btn" class="p-1.5 text-slate-400 hover:text-rose-600 transition-colors" title="Exclude selected year">
+                    <i data-lucide="calendar-x" class="w-4 h-4"></i>
+                </button>
+            </div>
+
+            <div class="flex items-center gap-2">
+                <span class="text-[10px] font-black text-slate-400 uppercase whitespace-nowrap">Global Top X:</span>
+                <input type="number" id="top-x-input" min="1" max="500" value="10" class="w-16 bg-slate-50 border-0 text-xs font-bold text-slate-700 rounded-lg px-2 py-1 outline-none ring-1 ring-slate-200 focus:ring-2 focus:ring-indigo-500">
+            </div>
+
+            <div class="flex items-center gap-2">
+                <span class="text-[10px] font-black text-slate-400 uppercase whitespace-nowrap">Pareto Top X:</span>
+                <input type="number" id="pareto-top-x-input" min="1" max="500" value="10" class="w-16 bg-slate-50 border-0 text-xs font-bold text-slate-700 rounded-lg px-2 py-1 outline-none ring-1 ring-slate-200 focus:ring-2 focus:ring-indigo-500">
+            </div>
+
+            <div class="flex items-center gap-2">
+                <span class="text-[10px] font-black text-slate-400 uppercase whitespace-nowrap">Theme:</span>
+                <select id="treemap-theme" class="bg-slate-50 border-0 text-xs font-bold text-slate-700 rounded-lg px-3 py-1 outline-none ring-1 ring-slate-200 focus:ring-2 focus:ring-indigo-500">
+                    <option value="default">Default</option>
+                    <option value="ocean">Ocean</option>
+                    <option value="sunset">Sunset</option>
+                    <option value="forest">Forest</option>
+                    <option value="monochrome">Monochrome</option>
+                    <option value="vintage">Vintage</option>
+                    <option value="neon">Neon</option>
+                    <option value="berry">Berry</option>
+                    <option value="earth">Earth</option>
+                    <option value="cyberpunk">Cyberpunk</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- KPI Summary Cards -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <div class="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm border-l-8 border-l-indigo-500">
+                <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Scope Revenue</p>
+                <h2 id="summary-rev" class="text-3xl font-black text-slate-800">₱0</h2>
+            </div>
+            <div class="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm border-l-8 border-l-emerald-500">
+                <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Scope Profit</p>
+                <h2 id="summary-profit" class="text-3xl font-black text-slate-800">₱0</h2>
+            </div>
+            <div class="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm border-l-8 border-l-amber-500">
+                <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Unique Items</p>
+                <h2 id="summary-items" class="text-3xl font-black text-slate-800">0</h2>
+            </div>
+            <div class="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm border-l-8 border-l-rose-500">
+                <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Unique Categories</p>
+                <h2 id="summary-categories" class="text-3xl font-black text-slate-800">0</h2>
+            </div>
+        </div>
+
+        <!-- Main Visualizer Area -->
+        <div id="analytics-content" class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
+            <div class="lg:col-span-3 bg-white p-8 rounded-3xl border border-slate-200 shadow-md card-animate">
+                <div class="flex justify-between items-center mb-6">
+                    <div class="flex items-center gap-4">
+                        <h3 class="text-xl font-black text-slate-800 flex items-center gap-2"><i data-lucide="layout-panel-left" class="text-indigo-600 w-6 h-6"></i> Strategic Composition</h3>
+                        <button id="treemap-zoom-out" class="hidden px-3 py-1 bg-slate-800 text-white text-[10px] font-bold uppercase rounded-lg hover:bg-slate-700 transition-all flex items-center gap-2"><i data-lucide="zoom-out" class="w-3 h-3"></i> Back to Global</button>
+                    </div>
+                    <select id="hero-chart-type" class="bg-slate-100 border-0 text-[10px] font-black uppercase text-slate-600 rounded-lg px-3 py-1.5 outline-none ring-1 ring-slate-200 focus:ring-2 focus:ring-indigo-500">
+                        <option value="treemap">Treemap View</option>
+                        <option value="sunburst">Sunburst View</option>
+                        <option value="waterfall">Waterfall Analysis</option>
+                    </select>
+                </div>
+                <div class="h-[600px] relative"><canvas id="heroChart"></canvas></div>
+            </div>
+            <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm card-animate">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="font-bold text-slate-800 flex items-center gap-2"><i data-lucide="trending-up" class="text-indigo-500 w-4 h-4"></i> Growth Trajectory</h3>
+                    <span class="text-[10px] bg-slate-100 px-2 py-0.5 rounded font-bold uppercase text-slate-500">YoY Aggregate</span>
+                </div>
+                <div class="h-[250px] relative"><canvas id="trendChart"></canvas></div>
+            </div>
+            <div class="lg:col-span-2 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm card-animate">
+                <h3 class="font-bold text-slate-800 mb-6 flex items-center gap-2"><i data-lucide="bar-chart-3" class="text-emerald-500 w-4 h-4"></i> Pareto Analysis (80/20 Rule)</h3>
+                <div class="h-[250px] relative"><canvas id="paretoChart"></canvas></div>
+            </div>
+            <div class="lg:col-span-3 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm card-animate">
+                <h3 class="font-bold text-slate-800 mb-6 flex items-center gap-2"><i data-lucide="layers" class="text-amber-500 w-4 h-4"></i> Rank Leaderboard</h3>
+                <div class="h-[400px] relative"><canvas id="barChart"></canvas></div>
+            </div>
+        </div>
+
+        <!-- Strategic Matrix Area -->
+        <div id="matrix-content" class="hidden space-y-8 animate-in fade-in duration-500">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4" id="quadrant-grid"></div>
+            <div class="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm card-animate">
+                <div class="mb-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                    <div>
+                        <h3 class="text-xl font-black text-slate-800 flex items-center gap-2"><i data-lucide="layout-grid" class="text-indigo-600"></i> Strategic Mapping</h3>
+                        <p id="matrix-benchmark" class="text-[10px] text-slate-400 font-black uppercase tracking-widest mt-1">Axes normalized via Logistic Scale (Z-Score)</p>
+                    </div>
+                    <select id="scatter-norm-method" class="bg-slate-50 border-0 text-xs font-bold text-slate-700 rounded-lg px-3 py-2 outline-none ring-1 ring-slate-200 focus:ring-2 focus:ring-indigo-500 shadow-sm">
+                        <option value="logistic">Logistic (Z-Score)</option>
+                        <option value="linear">Linear (% of Max)</option>
+                        <option value="percentile">Percentile Rank</option>
+                    </select>
+                    <select id="scatter-group-viz" class="bg-slate-50 border-0 text-xs font-bold text-slate-700 rounded-lg px-3 py-2 outline-none ring-1 ring-slate-200 focus:ring-2 focus:ring-indigo-500 shadow-sm">
+                        <option value="outline">Outline Only</option>
+                        <option value="hull">Convex Hull</option>
+                        <option value="centroid">Centroids</option>
+                    </select>
+                </div>
+                <div id="scatter-legend" class="flex flex-wrap gap-2 mb-4 max-h-[100px] overflow-y-auto custom-scrollbar hidden"></div>
+                <div class="h-[600px] relative"><canvas id="scatterChart"></canvas></div>
+            </div>
+        </div>
+
+        <!-- Seasonality Content -->
+        <div id="seasonality-content" class="hidden space-y-8 animate-in fade-in duration-500">
+            <div class="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm card-animate">
+                <div class="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
+                    <div>
+                        <h3 class="text-xl font-black text-slate-800 flex items-center gap-2"><i data-lucide="sun" class="text-amber-500"></i> Seasonal Velocity</h3>
+                        <p class="text-[10px] text-slate-400 font-black uppercase tracking-widest mt-1">Normalized Monthly Performance (Jan-Dec)</p>
+                    </div>
+                    <div class="flex gap-4 bg-slate-50 p-2 rounded-xl">
+                        <select id="season-cat-a" class="bg-white border-0 text-xs font-bold text-indigo-600 rounded-lg px-3 py-2 outline-none ring-1 ring-slate-200 focus:ring-2 focus:ring-indigo-500 shadow-sm min-w-[200px]"></select>
+                        <span class="font-black text-slate-300 self-center">VS</span>
+                        <select id="season-cat-b" class="bg-white border-0 text-xs font-bold text-rose-500 rounded-lg px-3 py-2 outline-none ring-1 ring-slate-200 focus:ring-2 focus:ring-rose-500 shadow-sm min-w-[200px]"></select>
+                    </div>
+                </div>
+                <div class="h-[600px] relative flex items-center justify-center">
+                    <canvas id="seasonalityChart"></canvas>
+                    <div id="seasonality-empty" class="absolute inset-0 flex flex-col items-center justify-center text-slate-300">
+                        <i data-lucide="calendar-clock" class="w-12 h-12 mb-2 opacity-50"></i>
+                        <p class="text-sm font-bold uppercase">Import 'seasonality_velocity.csv' to view</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Associations Content -->
+        <div id="associations-content" class="hidden space-y-8 animate-in fade-in duration-500">
+            <div class="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm card-animate min-h-[800px]">
+                <div class="mb-8">
+                    <h3 class="text-xl font-black text-slate-800 flex items-center gap-2"><i data-lucide="link" class="text-emerald-500"></i> Market Basket Analysis</h3>
+                    <p class="text-[10px] text-slate-400 font-black uppercase tracking-widest mt-1">Category Attachment Rates (Chord Diagram)</p>
+                </div>
+                <div id="chord-diagram-container" class="w-full h-[700px] flex items-center justify-center relative overflow-hidden">
+                    <p id="associations-empty" class="text-slate-300 font-bold uppercase text-sm flex flex-col items-center gap-2"><i data-lucide="network" class="w-12 h-12 opacity-50"></i> Import 'market_basket_analysis.csv' to view</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Master-Detail Section: Side-by-Side Table and Drill-Down -->
+        <div class="grid grid-cols-1 xl:grid-cols-2 gap-8 mt-8 items-start">
+            
+            <!-- Table (Master) -->
+            <div class="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden h-[800px] flex flex-col card-animate">
+                <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50 shrink-0">
+                    <div class="relative w-full max-w-[240px]">
+                        <i data-lucide="search" class="absolute left-3 top-2.5 text-slate-400 w-4 h-4"></i>
+                        <input type="text" id="table-search" placeholder="Search item or category..." class="w-full pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm">
+                    </div>
+                    <select id="master-sort" class="bg-white border border-slate-200 text-xs font-bold text-slate-700 rounded-xl px-3 py-2 outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm">
+                        <option value="profit">Sort: Profit</option>
+                        <option value="revenue">Sort: Revenue</option>
+                        <option value="margin">Sort: Margin</option>
+                        <option value="name">Sort: Name</option>
+                    </select>
+                </div>
+                <div class="flex-1 overflow-y-auto custom-scrollbar p-4">
+                    <div id="data-master-grid" class="grid grid-cols-1 sm:grid-cols-2 gap-3"></div>
+                </div>
+            </div>
+
+            <!-- Tracker (Detail) -->
+            <div id="drill-down-container" class="bg-white rounded-3xl border border-slate-200 shadow-xl overflow-hidden flex flex-col h-[800px] card-animate">
+                <div id="drill-header" class="bg-slate-900 p-6 flex justify-between items-center text-white">
+                    <div class="flex items-center gap-3">
+                        <div class="bg-indigo-500 p-2 rounded-lg"><i data-lucide="line-chart" size="20"></i></div>
+                        <div>
+                            <h3 id="drill-name" class="font-black tracking-tight text-lg">Identity Tracker</h3>
+                            <p id="drill-cat" class="text-[10px] uppercase font-bold text-slate-400">Click a row on the left to see trajectory</p>
+                            <div id="drill-stats" class="flex gap-3 mt-2 hidden">
+                                <div class="bg-indigo-500/20 border border-indigo-500/30 px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-widest text-indigo-300">
+                                    CAGR: <span id="drill-cagr" class="text-white">0%</span>
+                                </div>
+                                <div class="bg-emerald-500/20 border border-emerald-500/30 px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-widest text-emerald-300">
+                                    Latest YoY: <span id="drill-yoy" class="text-white">0%</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex bg-slate-800 p-1 rounded-lg">
+                        <button id="drill-tab-trend" class="px-3 py-1 rounded text-[10px] font-bold uppercase transition-all bg-slate-700">Trend</button>
+                        <button id="drill-tab-radar" class="px-3 py-1 rounded text-[10px] font-bold uppercase transition-all text-slate-400">Radar</button>
+                    </div>
+                </div>
+                <div class="flex-1 p-8 relative bg-slate-50 flex flex-col">
+                    <div id="drill-placeholder" class="flex-1 flex items-center justify-center text-slate-300 flex-col gap-4 border-2 border-dashed border-slate-200 rounded-2xl m-4">
+                        <i data-lucide="mouse-pointer-click" size="48" class="opacity-20"></i>
+                        <p class="text-sm font-bold uppercase tracking-widest">Select an item for detailed analysis</p>
+                    </div>
+                    <div id="drill-chart-wrapper" class="hidden flex-1 relative">
+                        <canvas id="drillChart"></canvas>
+                    </div>
+                    <div id="radar-chart-wrapper" class="hidden flex-1 relative">
+                        <canvas id="radarChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Excluded Outliers Panel -->
+        <div id="outlier-panel" class="hidden mt-8 bg-slate-900 rounded-3xl p-8 text-white shadow-xl shadow-slate-300">
+            <div class="flex items-center gap-3 mb-8">
+                <div class="bg-rose-500 p-2 rounded-lg"><i data-lucide="x-circle" class="w-5 h-5"></i></div>
+                <h3 class="text-xl font-black tracking-tight">Strategic Exclusions</h3>
+            </div>
+            <div id="outlier-list" class="flex flex-wrap gap-3"></div>
+        </div>
+    </div>
+
+    <!-- Quadrant Detail Modal -->
+    <div id="quadrant-modal" onclick="if(event.target === this) closeModal()" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl shadow-2xl w-full max-w-2xl max-h-[80vh] flex flex-col overflow-hidden">
+            <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+                <div>
+                    <h3 id="modal-title" class="text-xl font-black text-slate-800">Quadrant Items</h3>
+                    <p id="modal-subtitle" class="text-[10px] font-bold text-slate-400 uppercase tracking-widest"></p>
+                </div>
+                <button onclick="closeModal()" class="p-2 hover:bg-slate-200 rounded-full transition-colors">
+                    <i data-lucide="x" class="w-6 h-6 text-slate-500"></i>
+                </button>
+            </div>
+            <div class="flex-1 overflow-y-auto custom-scrollbar p-6">
+                <table class="w-full text-left text-sm">
+                    <thead class="text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100">
+                        <tr>
+                            <th class="pb-4">Identity</th>
+                            <th class="pb-4 text-right">Revenue</th>
+                            <th class="pb-4 text-right">Profit</th>
+                        </tr>
+                    </thead>
+                    <tbody id="modal-table-body" class="divide-y divide-slate-50"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Category Manager Modal -->
+    <div id="cat-mgr-modal" onclick="if(event.target === this) closeCatMgr()" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl shadow-2xl w-full max-w-5xl max-h-[85vh] flex flex-col overflow-hidden">
+            <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+                <div>
+                    <h3 class="text-xl font-black text-slate-800">Category Manager</h3>
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Bulk Correction & Item Editor</p>
+                </div>
+                <button onclick="closeCatMgr()" class="p-2 hover:bg-slate-200 rounded-full transition-colors">
+                    <i data-lucide="x" class="w-6 h-6 text-slate-500"></i>
+                </button>
+            </div>
+            
+            <div class="flex flex-col md:flex-row h-full overflow-hidden">
+                <!-- Sidebar: Bulk Actions -->
+                <div class="w-full md:w-1/3 p-6 border-r border-slate-100 bg-slate-50/50 flex flex-col gap-6 overflow-y-auto">
+                    <div>
+                        <label class="text-[10px] font-black text-slate-400 uppercase mb-2 block">Select Category</label>
+                        <select id="cat-mgr-source" class="w-full bg-white border-0 text-sm font-bold text-slate-700 rounded-xl px-4 py-3 outline-none ring-1 ring-slate-200 focus:ring-2 focus:ring-indigo-500 shadow-sm">
+                        </select>
+                    </div>
+                    
+                    <div class="p-5 bg-white rounded-2xl border border-slate-200 shadow-sm">
+                        <h4 class="text-xs font-black text-slate-800 mb-4 flex items-center gap-2"><i data-lucide="layers" class="w-3 h-3 text-indigo-500"></i> Bulk Rename</h4>
+                        <div class="space-y-4">
+                            <div>
+                                <label class="text-[10px] font-black text-slate-400 uppercase mb-1 block">New Name</label>
+                                <input type="text" id="cat-mgr-dest" placeholder="Enter new name..." class="w-full px-3 py-2 bg-slate-50 border-0 rounded-lg text-xs font-bold outline-none ring-1 ring-slate-200 focus:ring-2 focus:ring-indigo-500">
+                            </div>
+                            <div id="cat-mgr-stats" class="hidden bg-indigo-50 p-2 rounded-lg border border-indigo-100">
+                                <p class="text-[10px] font-bold text-indigo-600 text-center">Updates <span id="cat-mgr-count">0</span> items</p>
+                            </div>
+                            <button id="cat-mgr-apply" class="w-full py-3 bg-indigo-600 text-white rounded-xl font-black uppercase tracking-widest text-[10px] shadow-lg shadow-indigo-200 hover:bg-indigo-700 transition-all btn-press">
+                                Apply to All
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="p-5 bg-white rounded-2xl border border-slate-200 shadow-sm">
+                        <h4 class="text-xs font-black text-slate-800 mb-4 flex items-center gap-2"><i data-lucide="sparkles" class="w-3 h-3 text-indigo-500"></i> AI Auto-Categorize</h4>
+                        <p class="text-[10px] text-slate-400 mb-4 font-medium">Automatically sort items in this list into your existing categories using AI.</p>
+                        <div class="mb-3">
+                            <label class="text-[10px] font-black text-slate-400 uppercase mb-1 block">Batch Size</label>
+                            <input type="number" id="ai-batch-size" value="50" min="5" max="100" class="w-full px-3 py-2 bg-slate-50 border-0 rounded-lg text-xs font-bold outline-none ring-1 ring-slate-200 focus:ring-2 focus:ring-indigo-500">
+                        </div>
+                        <div id="ai-cat-progress" class="hidden mb-3">
+                            <div class="w-full bg-slate-100 rounded-full h-1.5 mb-1 overflow-hidden">
+                                <div id="ai-cat-bar" class="bg-indigo-500 h-1.5 rounded-full transition-all duration-500" style="width: 0%"></div>
+                            </div>
+                            <p id="ai-cat-status" class="text-[9px] font-bold text-slate-500 text-center">Initializing...</p>
+                        </div>
+                        <button id="btn-ai-categorize" class="w-full py-3 bg-indigo-600 text-white rounded-xl font-black uppercase tracking-widest text-[10px] shadow-lg shadow-indigo-200 hover:bg-indigo-700 transition-all btn-press">
+                            Start AI Sort
+                        </button>
+                    </div>
+
+                    <div class="p-5 bg-white rounded-2xl border border-slate-200 shadow-sm">
+                        <h4 class="text-xs font-black text-slate-800 mb-4 flex items-center gap-2"><i data-lucide="git-merge" class="w-3 h-3 text-amber-500"></i> AI Consolidate</h4>
+                        <p class="text-[10px] text-slate-400 mb-4 font-medium">Find and merge duplicate categories (e.g., "Bev" &rarr; "Beverages").</p>
+                        <button id="btn-ai-consolidate" class="w-full py-3 bg-amber-500 text-white rounded-xl font-black uppercase tracking-widest text-[10px] shadow-lg shadow-amber-200 hover:bg-amber-600 transition-all btn-press">
+                            Find Merges
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Main: Item List -->
+                <div class="w-full md:w-2/3 flex flex-col bg-white">
+                    <div class="p-4 border-b border-slate-100 bg-slate-50/30 flex justify-between items-center">
+                        <h4 class="text-xs font-black text-slate-600 uppercase tracking-widest flex items-center gap-2"><i data-lucide="list" class="w-3 h-3"></i> Individual Items</h4>
+                        <span class="text-[10px] text-slate-400 font-bold">Edit items one by one</span>
+                    </div>
+                    <div class="flex-1 overflow-y-auto custom-scrollbar p-0" id="cat-mgr-items">
+                        <!-- Items injected here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Item Manager Modal -->
+    <div id="item-mgr-modal" onclick="if(event.target === this) closeItemMgr()" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl shadow-2xl w-full max-w-4xl max-h-[85vh] flex flex-col overflow-hidden animate-in fade-in zoom-in duration-200">
+            <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+                <div>
+                    <h3 class="text-xl font-black text-slate-800">Item Manager</h3>
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Search, Analyze & Delete</p>
+                </div>
+                <button onclick="closeItemMgr()" class="p-2 hover:bg-slate-200 rounded-full transition-colors">
+                    <i data-lucide="x" class="w-6 h-6 text-slate-500"></i>
+                </button>
+            </div>
+            <div class="p-4 border-b border-slate-100 bg-white flex gap-4 items-center">
+                <div class="relative flex-1">
+                    <i data-lucide="search" class="absolute left-3 top-2.5 text-slate-400 w-4 h-4"></i>
+                    <input type="text" id="item-mgr-search" placeholder="Search items..." class="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
+                <select id="item-mgr-sort" class="bg-slate-50 border border-slate-200 text-xs font-bold text-slate-700 rounded-xl px-4 py-2 outline-none focus:ring-2 focus:ring-indigo-500">
+                    <option value="profit_desc">Highest Profit</option>
+                    <option value="profit_asc">Lowest Profit</option>
+                    <option value="name_asc">Name (A-Z)</option>
+                </select>
+            </div>
+            <div class="flex-1 overflow-y-auto custom-scrollbar p-0">
+                <table class="w-full text-left text-sm border-collapse">
+                    <thead class="bg-slate-50 text-slate-500 uppercase text-[10px] font-black tracking-widest sticky top-0 z-10 border-b border-slate-100">
+                        <tr>
+                            <th class="px-6 py-3">Item Name</th>
+                            <th class="px-6 py-3">Category</th>
+                            <th class="px-6 py-3 text-right">Profit</th>
+                            <th class="px-6 py-3 text-center">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="item-mgr-body" class="divide-y divide-slate-50"></tbody>
+                </table>
+            </div>
+            <div class="p-4 border-t border-slate-100 bg-slate-50 flex justify-between items-center">
+                <p class="text-xs font-bold text-slate-400" id="item-mgr-count">0 items found</p>
+                <button onclick="closeItemMgr()" class="px-6 py-2 bg-slate-800 text-white rounded-xl font-bold text-xs hover:bg-slate-700 transition-all">Done</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- AI Settings Modal -->
+    <div id="ai-settings-modal" onclick="if(event.target === this) closeAISettings()" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl shadow-2xl w-full max-w-md flex flex-col overflow-hidden animate-in fade-in zoom-in duration-200">
+            <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+                <div>
+                    <h3 class="text-xl font-black text-slate-800 flex items-center gap-2"><i data-lucide="brain-circuit" class="w-5 h-5 text-indigo-600"></i> AI Configuration</h3>
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">LLM Provider Settings</p>
+                </div>
+                <button onclick="closeAISettings()" class="p-2 hover:bg-slate-200 rounded-full transition-colors">
+                    <i data-lucide="x" class="w-6 h-6 text-slate-500"></i>
+                </button>
+            </div>
+            <div class="p-6 space-y-4">
+                <div>
+                    <label class="text-[10px] font-black text-slate-400 uppercase mb-1 block">Provider</label>
+                    <select id="ai-provider" class="w-full bg-slate-50 border-0 text-sm font-bold text-slate-700 rounded-xl px-4 py-3 outline-none ring-1 ring-slate-200 focus:ring-2 focus:ring-indigo-500">
+                        <option value="openai">OpenAI (Cloud)</option>
+                        <option value="lmstudio">LM Studio (Local)</option>
+                        <option value="custom">Custom / Other</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="text-[10px] font-black text-slate-400 uppercase mb-1 block">Base URL</label>
+                    <input type="text" id="ai-base-url" placeholder="https://api.openai.com/v1" class="w-full px-4 py-3 bg-slate-50 border-0 rounded-xl text-sm font-bold outline-none ring-1 ring-slate-200 focus:ring-2 focus:ring-indigo-500">
+                </div>
+                <div>
+                    <label class="text-[10px] font-black text-slate-400 uppercase mb-1 block">API Key</label>
+                    <input type="password" id="ai-api-key" placeholder="sk-..." class="w-full px-4 py-3 bg-slate-50 border-0 rounded-xl text-sm font-bold outline-none ring-1 ring-slate-200 focus:ring-2 focus:ring-indigo-500">
+                </div>
+                <div>
+                    <label class="text-[10px] font-black text-slate-400 uppercase mb-1 block">Model Name</label>
+                    <input type="text" id="ai-model" placeholder="gpt-3.5-turbo" class="w-full px-4 py-3 bg-slate-50 border-0 rounded-xl text-sm font-bold outline-none ring-1 ring-slate-200 focus:ring-2 focus:ring-indigo-500">
+                </div>
+                <div class="flex gap-3 mt-4">
+                    <button id="test-ai-connection" class="flex-1 py-3 bg-slate-100 text-slate-600 rounded-xl font-black uppercase tracking-widest text-xs hover:bg-slate-200 transition-all btn-press">
+                        Test Connection
+                    </button>
+                    <button id="save-ai-settings" class="flex-1 py-3 bg-indigo-600 text-white rounded-xl font-black uppercase tracking-widest text-xs shadow-lg shadow-indigo-200 hover:bg-indigo-700 transition-all btn-press">
+                        Save Config
+                    </button>
+                </div>
+                <p id="ai-connection-status" class="text-center text-[10px] font-bold mt-2 min-h-[1.5em]"></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- AI Summary Modal -->
+    <div id="ai-summary-modal" onclick="if(event.target === this) closeAISummary()" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl shadow-2xl w-full max-w-2xl max-h-[80vh] flex flex-col overflow-hidden animate-in fade-in zoom-in duration-200">
+            <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+                <div>
+                    <h3 class="text-xl font-black text-slate-800 flex items-center gap-2"><i data-lucide="clipboard-check" class="w-5 h-5 text-emerald-600"></i> Classification Summary</h3>
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">AI Auto-Categorization Results</p>
+                </div>
+                <button onclick="closeAISummary()" class="p-2 hover:bg-slate-200 rounded-full transition-colors">
+                    <i data-lucide="x" class="w-6 h-6 text-slate-500"></i>
+                </button>
+            </div>
+            <div class="flex-1 overflow-y-auto custom-scrollbar p-6">
+                <table class="w-full text-left text-sm">
+                    <thead class="text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 sticky top-0 bg-white">
+                        <tr>
+                            <th class="pb-4 pl-2">Item Name</th>
+                            <th class="pb-4 text-slate-300">Old Category</th>
+                            <th class="pb-4 text-indigo-600">New Category</th>
+                        </tr>
+                    </thead>
+                    <tbody id="ai-summary-body" class="divide-y divide-slate-50"></tbody>
+                </table>
+            </div>
+            <div class="p-4 border-t border-slate-100 bg-slate-50 flex justify-end gap-3">
+                <button id="ai-revert-btn" onclick="revertAIChanges()" class="hidden px-6 py-2 bg-rose-100 text-rose-600 rounded-xl font-bold text-xs hover:bg-rose-200 transition-all">Revert Changes</button>
+                <button onclick="closeAISummary()" class="px-6 py-2 bg-slate-800 text-white rounded-xl font-bold text-xs hover:bg-slate-700 transition-all">Done</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- AI Consolidate Modal -->
+    <div id="ai-consolidate-modal" onclick="if(event.target === this) closeAIConsolidate()" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl shadow-2xl w-full max-w-2xl max-h-[80vh] flex flex-col overflow-hidden animate-in fade-in zoom-in duration-200">
+            <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+                <div>
+                    <h3 class="text-xl font-black text-slate-800 flex items-center gap-2"><i data-lucide="git-merge" class="w-5 h-5 text-amber-500"></i> Category Consolidation</h3>
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">AI Suggested Merges</p>
+                </div>
+                <button onclick="closeAIConsolidate()" class="p-2 hover:bg-slate-200 rounded-full transition-colors">
+                    <i data-lucide="x" class="w-6 h-6 text-slate-500"></i>
+                </button>
+            </div>
+            <div class="flex-1 overflow-y-auto custom-scrollbar p-6">
+                <div id="ai-consolidate-loading" class="hidden flex flex-col items-center justify-center py-12 text-slate-400">
+                    <i data-lucide="loader-2" class="w-8 h-8 animate-spin mb-2"></i>
+                    <p class="text-xs font-bold">Analyzing categories...</p>
+                </div>
+                <div id="ai-consolidate-empty" class="hidden text-center py-12 text-slate-400 font-bold text-sm">No similar categories found.</div>
+                <div id="ai-consolidate-list" class="space-y-3"></div>
+            </div>
+            <div class="p-4 border-t border-slate-100 bg-slate-50 flex justify-end">
+                <button onclick="closeAIConsolidate()" class="px-6 py-2 bg-slate-800 text-white rounded-xl font-bold text-xs hover:bg-slate-700 transition-all">Done</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Edit Category Modal -->
+    <div id="quick-edit-modal" onclick="if(event.target === this) closeQuickEdit()" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl shadow-2xl w-full max-w-md flex flex-col overflow-hidden animate-in fade-in zoom-in duration-200">
+            <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+                <div>
+                    <h3 class="text-xl font-black text-slate-800">Quick Edit</h3>
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Change Item Category</p>
+                </div>
+                <button onclick="closeQuickEdit()" class="p-2 hover:bg-slate-200 rounded-full transition-colors">
+                    <i data-lucide="x" class="w-6 h-6 text-slate-500"></i>
+                </button>
+            </div>
+            <div class="p-6 space-y-4">
+                <div>
+                    <label class="text-[10px] font-black text-slate-400 uppercase mb-1 block">Item Name</label>
+                    <input type="text" id="quick-edit-name" disabled class="w-full px-4 py-3 bg-slate-100 border-0 rounded-xl text-sm font-bold text-slate-500 outline-none">
+                </div>
+                <div>
+                    <label class="text-[10px] font-black text-slate-400 uppercase mb-1 block">Category</label>
+                    <select id="quick-edit-cat" class="w-full bg-slate-50 border-0 text-sm font-bold text-slate-700 rounded-xl px-4 py-3 outline-none ring-1 ring-slate-200 focus:ring-2 focus:ring-indigo-500">
+                    </select>
+                </div>
+                <div class="flex gap-3 mt-4">
+                    <button onclick="closeQuickEdit()" class="flex-1 py-3 bg-slate-100 text-slate-600 rounded-xl font-black uppercase tracking-widest text-xs hover:bg-slate-200 transition-all">
+                        Cancel
+                    </button>
+                    <button id="quick-edit-save" class="flex-1 py-3 bg-indigo-600 text-white rounded-xl font-black uppercase tracking-widest text-xs shadow-lg shadow-indigo-200 hover:bg-indigo-700 transition-all">
+                        Save Changes
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scatter Point Detail Modal -->
+    <div id="scatter-point-modal" onclick="if(event.target === this) closeScatterPointModal()" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl shadow-2xl w-full max-w-sm flex flex-col overflow-hidden animate-in fade-in zoom-in duration-200">
+            <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+                <div>
+                    <h3 class="text-xl font-black text-slate-800">Item Details</h3>
+                    <p id="scatter-modal-category" class="text-[10px] font-bold text-slate-400 uppercase tracking-widest"></p>
+                </div>
+                <button onclick="closeScatterPointModal()" class="p-2 hover:bg-slate-200 rounded-full transition-colors">
+                    <i data-lucide="x" class="w-6 h-6 text-slate-500"></i>
+                </button>
+            </div>
+            <div class="p-6 space-y-4">
+                <h4 id="scatter-modal-name" class="text-lg font-bold text-slate-700 break-words"></h4>
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="bg-emerald-50 p-3 rounded-xl border border-emerald-100">
+                        <p class="text-[10px] font-black text-emerald-400 uppercase">Profit</p>
+                        <p id="scatter-modal-profit" class="text-lg font-black text-emerald-600"></p>
+                    </div>
+                    <div class="bg-indigo-50 p-3 rounded-xl border border-indigo-100">
+                        <p class="text-[10px] font-black text-indigo-400 uppercase">Revenue</p>
+                        <p id="scatter-modal-revenue" class="text-lg font-black text-indigo-600"></p>
+                    </div>
+                </div>
+                <div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
+                     <p class="text-[10px] font-black text-slate-400 uppercase">Margin</p>
+                     <p id="scatter-modal-margin" class="text-lg font-black text-slate-600"></p>
+                </div>
+            </div>
+             <div class="p-4 border-t border-slate-100 bg-slate-50 flex justify-end">
+                <button onclick="closeScatterPointModal()" class="px-6 py-2 bg-slate-800 text-white rounded-xl font-bold text-xs hover:bg-slate-700 transition-all">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Data Management Modal -->
+    <div id="import-modal" onclick="if(event.target === this) closeImportModal()" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl shadow-2xl w-full max-w-lg flex flex-col overflow-hidden animate-in fade-in zoom-in duration-200">
+            <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+                <div>
+                    <h3 class="text-xl font-black text-slate-800">Data Management</h3>
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Import & Export</p>
+                </div>
+                <button onclick="closeImportModal()" class="p-2 hover:bg-slate-200 rounded-full transition-colors">
+                    <i data-lucide="x" class="w-6 h-6 text-slate-500"></i>
+                </button>
+            </div>
+            <div class="p-6 space-y-6">
+                <div class="p-4 border border-slate-200 rounded-2xl bg-slate-50 hover:border-indigo-300 transition-colors">
+                    <div class="flex justify-between items-start mb-3">
+                        <div class="flex items-center gap-3">
+                            <div class="bg-emerald-100 p-2 rounded-lg text-emerald-600"><i data-lucide="file-spreadsheet" class="w-5 h-5"></i></div>
+                            <div>
+                                <h4 class="font-bold text-slate-700 text-sm">Import CSV Data</h4>
+                                <p class="text-[10px] text-slate-400 font-bold uppercase">Sales, Seasonality, or Associations</p>
+                            </div>
+                        </div>
+                        <button onclick="downloadCSVSample()" class="text-[10px] font-black text-indigo-600 hover:underline uppercase">Sample</button>
+                    </div>
+                    <label class="block w-full">
+                        <span class="sr-only">Choose CSV</span>
+                        <input type="file" id="csv-upload-modal" accept=".csv" class="block w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-bold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100 transition-all cursor-pointer"/>
+                    </label>
+                </div>
+                <div class="p-4 border border-slate-200 rounded-2xl bg-slate-50 hover:border-indigo-300 transition-colors">
+                    <div class="flex justify-between items-start mb-3">
+                        <div class="flex items-center gap-3">
+                            <div class="bg-indigo-100 p-2 rounded-lg text-indigo-600"><i data-lucide="file-code" class="w-5 h-5"></i></div>
+                            <div>
+                                <h4 class="font-bold text-slate-700 text-sm">Import JS Bundle</h4>
+                                <p class="text-[10px] text-slate-400 font-bold uppercase">Restore Full Data State (.js)</p>
+                            </div>
+                        </div>
+                        <button onclick="downloadJSSample()" class="text-[10px] font-black text-indigo-600 hover:underline uppercase">Sample</button>
+                    </div>
+                    <label class="block w-full">
+                        <span class="sr-only">Choose JS</span>
+                        <input type="file" id="js-upload-modal" accept=".js" class="block w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-bold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 transition-all cursor-pointer"/>
+                    </label>
+                </div>
+                <div class="p-4 border border-slate-200 rounded-2xl bg-slate-50 hover:border-amber-300 transition-colors">
+                    <div class="flex items-center gap-3 mb-3">
+                        <div class="bg-amber-100 p-2 rounded-lg text-amber-600"><i data-lucide="download" class="w-5 h-5"></i></div>
+                        <div>
+                            <h4 class="font-bold text-slate-700 text-sm">Download Data Bundle</h4>
+                            <p class="text-[10px] text-slate-400 font-bold uppercase">Export Current State as .js</p>
+                        </div>
+                    </div>
+                    <button onclick="downloadDataBundle()" class="w-full py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-50 hover:text-amber-600 transition-all shadow-sm">
+                        Download 'ospos_data.js'
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- STORAGE (IndexedDB) ---
+        const DB_NAME = 'OSPOS_Strategic_DB';
+        const STORE_NAME = 'rawData';
+        let db;
+
+        const initDB = () => new Promise((resolve) => {
+            const request = indexedDB.open(DB_NAME, 1);
+            request.onupgradeneeded = (e) => {
+                db = e.target.result;
+                if (!db.objectStoreNames.contains(STORE_NAME)) db.createObjectStore(STORE_NAME, { keyPath: 'id', autoIncrement: true });
+            };
+            request.onsuccess = (e) => { db = e.target.result; resolve(); };
+        });
+
+        const saveToDB = async (dataArray) => {
+            const tx = db.transaction(STORE_NAME, 'readwrite');
+            const store = tx.objectStore(STORE_NAME);
+            store.clear();
+            dataArray.forEach(item => store.add(item));
+            return new Promise(r => tx.oncomplete = r);
+        };
+
+        const loadFromDB = () => new Promise((resolve) => {
+            const tx = db.transaction(STORE_NAME, 'readonly');
+            const store = tx.objectStore(STORE_NAME);
+            const req = store.getAll();
+            req.onsuccess = () => resolve(req.result);
+        });
+
+        // --- APP STATE ---
+        let state = {
+            data: [],
+            seasonalityData: [],
+            associationsData: [],
+            aiConfig: AI.getConfig(),
+            outliers: JSON.parse(localStorage.getItem('ospos_report_outliers') || '[]'),
+            excludedYears: JSON.parse(localStorage.getItem('ospos_report_excluded_years') || '[]'),
+            viewMode: localStorage.getItem('ospos_view_mode') || 'item',
+            mainTab: localStorage.getItem('ospos_main_tab') || 'analytics',
+            heroChartType: localStorage.getItem('ospos_hero_chart') || 'treemap',
+            drillTab: 'trend',
+            metric: localStorage.getItem('ospos_metric') || 'profit',
+            topX: parseInt(localStorage.getItem('ospos_top_x')) || 10,
+            paretoTopX: parseInt(localStorage.getItem('ospos_pareto_top_x')) || 10,
+            scatterNormalization: localStorage.getItem('ospos_scatter_norm') || 'logistic',
+            scatterGroupViz: 'outline',
+            zoomedCategory: null,
+            treemapTheme: localStorage.getItem('ospos_treemap_theme') || 'default',
+            selectedYear: localStorage.getItem('ospos_selected_year') || '2025',
+            darkMode: localStorage.getItem('ospos_dark_mode') === 'true',
+            searchTerm: '',
+            sortConfig: { key: 'profit', dir: 'desc' },
+            drillItem: null,
+            charts: {}
+        };
+
+        let currentQuads = { winners: [], cashCows: [], sleepers: [], dogs: [] };
+
+        const calculateTrendLine = (data) => {
+            const n = data.length;
+            if (n < 2) return null;
+            let sumX = 0, sumY = 0, sumXY = 0, sumX2 = 0;
+            for (let i = 0; i < n; i++) { sumX += i; sumY += data[i]; sumXY += i * data[i]; sumX2 += i * i; }
+            const slope = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
+            const intercept = (sumY - slope * sumX) / n;
+            return data.map((_, i) => slope * i + intercept);
+        };
+
+        const debounce = (fn, ms) => {
+            let timeout;
+            return (...args) => {
+                clearTimeout(timeout);
+                timeout = setTimeout(() => fn.apply(this, args), ms);
+            };
+        };
+
+        const getFilteredData = () => {
+            if (state.searchTerm) {
+                const rawTerms = state.searchTerm.toLowerCase().split('+').map(t => t.trim()).filter(t => t);
+                return state.data.filter(item => {
+                    const iName = (item.item_name || '').toLowerCase();
+                    const iCat = (item.category || '').toLowerCase();
+                    return rawTerms.some(term => {
+                        const parts = term.split(' -');
+                        const include = parts[0].trim();
+                        const excludes = parts.slice(1).map(p => p.trim()).filter(p => p);
+                        const matchPositive = include === '' || iName.includes(include) || iCat.includes(include);
+                        const matchNegative = excludes.every(ex => !iName.includes(ex) && !iCat.includes(ex));
+                        return matchPositive && matchNegative;
+                    });
+                });
+            }
+
+            let raw = state.data.filter(item => {
+                if ((item.item_name && state.outliers.includes(item.item_name)) || state.outliers.includes(item.category)) return false;
+                if (state.excludedYears.includes(item.sale_year.toString())) return false;
+                if (state.selectedYear !== 'all' && item.sale_year.toString() !== state.selectedYear) return false;
+                return true;
+            });
+
+            return raw;
+        };
+
+        const getProcessedData = (inputData = null) => {
+            let filteredRaw = inputData || getFilteredData();
+            const map = {};
+            filteredRaw.forEach(item => {
+                let key;
+                if (state.viewMode === 'item' || state.searchTerm) {
+                    key = item.item_name || '(No Name)';
+                } else {
+                    key = item.category || '(Uncategorized)';
+                }
+
+                if (!map[key]) {
+                    map[key] = { 
+                        name: key, 
+                        category: item.category, 
+                        revenue: 0, 
+                        profit: 0, 
+                        sale_year: state.searchTerm ? 'All Time' : (state.selectedYear === 'all' ? 'All Time' : state.selectedYear)
+                    };
+                }
+                map[key].revenue += item.revenue;
+                map[key].profit += item.profit;
+            });
+
+            let list = Object.values(map).map(i => ({
+                ...i,
+                margin: i.revenue > 0 ? (i.profit / i.revenue) * 100 : 0
+            }));
+
+            const totalMetric = list.reduce((acc, curr) => acc + curr[state.metric], 0);
+            list = list.map(i => ({
+                ...i,
+                contribution: totalMetric > 0 ? (i[state.metric] / totalMetric) * 100 : 0
+            }));
+
+            // Pareto Classification (80/20 Rule) - Must sort by metric first
+            list.sort((a, b) => b[state.metric] - a[state.metric]);
+            
+            let runningSum = 0;
+            list.forEach(item => {
+                item.isPareto = runningSum < 80;
+                runningSum += item.contribution;
+            });
+
+            // Apply user-defined sort for table display
+            list.sort((a, b) => {
+                let vA = a[state.sortConfig.key], vB = b[state.sortConfig.key];
+                if (typeof vA === 'string') return state.sortConfig.dir === 'asc' ? vA.localeCompare(vB) : vB.localeCompare(vA);
+                return state.sortConfig.dir === 'asc' ? vA - vB : vB - vA;
+            });
+
+            return list;
+        };
+
+        const render = (skipCharts = false) => {
+            const scopeData = getFilteredData();
+            const list = getProcessedData(scopeData);
+
+            const itemCount = new Set(scopeData.filter(i => i.item_name).map(i => i.item_name)).size;
+            const categoryCount = new Set(scopeData.map(i => i.category)).size;
+
+            document.getElementById('summary-rev').innerText = `₱${list.reduce((a,b)=>a+b.revenue,0).toLocaleString()}`;
+            document.getElementById('summary-profit').innerText = `₱${list.reduce((a,b)=>a+b.profit,0).toLocaleString()}`;
+            document.getElementById('summary-items').innerText = itemCount.toLocaleString();
+            document.getElementById('summary-categories').innerText = categoryCount.toLocaleString();
+
+            renderMasterGrid(list.slice(0, 500));
+            renderOutliers();
+            if (!skipCharts) renderCharts(list, scopeData);
+            lucide.createIcons();
+        };
+
+        const renderMasterGrid = (list) => {
+            const container = document.getElementById('data-master-grid');
+            container.innerHTML = list.map(item => {
+                const isActive = state.drillItem === item.name ? 'ring-2 ring-indigo-500 bg-indigo-50' : 'bg-slate-50 border-slate-100 hover:bg-white hover:shadow-md';
+                return `
+                <div onclick="trackItem('${item.name.replace(/'/g, "\\'")}', '${(item.category || '').replace(/'/g, "\\'")}')" 
+                     class="p-4 rounded-2xl border transition-all cursor-pointer group flex flex-col justify-between gap-2 ${isActive}">
+                    <div class="flex justify-between items-start gap-2">
+                        <div class="overflow-hidden">
+                            <div class="flex items-center gap-2">
+                                <h4 class="font-bold text-slate-700 text-xs truncate" title="${item.name}">${item.name}</h4>
+                                ${item.isPareto ? `<span class="text-[6px] bg-indigo-600 text-white px-1 py-0.5 rounded font-black uppercase">80/20</span>` : ''}
+                            </div>
+                            <p class="text-[9px] text-slate-400 font-bold uppercase truncate">${item.category || ''}</p>
+                        </div>
+                        <div class="flex gap-1 -mr-2 -mt-2">
+                            <button onclick="event.stopPropagation(); toggleOutlier('${item.name.replace(/'/g, "\\'")}')" 
+                                    class="text-slate-300 hover:text-rose-500 transition-colors p-1" title="Exclude Item">
+                                <i data-lucide="x-circle" class="w-3 h-3"></i>
+                            </button>
+                            <button onclick="event.stopPropagation(); openQuickEdit('${item.name.replace(/'/g, "\\'")}', '${(item.category || '').replace(/'/g, "\\'")}')" 
+                                    class="text-slate-300 hover:text-indigo-600 transition-colors p-1" title="Quick Edit Category">
+                                <i data-lucide="edit-2" class="w-3 h-3"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="flex justify-between items-end mt-1">
+                        <div>
+                            <p class="text-[9px] font-black text-slate-400 uppercase">Profit</p>
+                            <p class="text-sm font-black text-emerald-600">₱${item.profit.toLocaleString()}</p>
+                        </div>
+                        <div class="text-right">
+                             <p class="text-[9px] font-black text-slate-400 uppercase">Contrib</p>
+                             <span class="text-xs font-bold text-slate-600">${item.contribution.toFixed(1)}%</span>
+                        </div>
+                    </div>
+                </div>`;
+            }).join('');
+        };
+
+        const trackItem = (name, category) => {
+            state.drillItem = name;
+            document.getElementById('drill-placeholder').classList.add('hidden');
+            document.getElementById('drill-chart-wrapper').classList.toggle('hidden', state.drillTab !== 'trend');
+            document.getElementById('radar-chart-wrapper').classList.toggle('hidden', state.drillTab !== 'radar');
+            
+            document.getElementById('drill-name').innerText = name;
+            document.getElementById('drill-cat').innerText = category;
+            
+            const historyRaw = state.data.filter(d => {
+                if (state.viewMode === 'category') {
+                    return (d.category || '(Uncategorized)') === name;
+                } else {
+                    return (d.item_name || '(No Name)') === name;
+                }
+            });
+
+            const annualMap = historyRaw.reduce((acc, curr) => {
+                const yr = curr.sale_year;
+                if (!acc[yr]) acc[yr] = { revenue: 0, profit: 0 };
+                acc[yr].revenue += curr.revenue;
+                acc[yr].profit += curr.profit;
+                return acc;
+            }, {});
+
+            const sortedYrs = Object.keys(annualMap).sort((a, b) => a - b);
+            const revenueData = sortedYrs.map(y => annualMap[y].revenue);
+            const profitData = sortedYrs.map(y => annualMap[y].profit);
+            
+            const revTrend = calculateTrendLine(revenueData);
+            const profTrend = calculateTrendLine(profitData);
+
+            const list = getProcessedData();
+            // Calculate CAGR and YoY
+            const metricData = state.metric === 'profit' ? profitData : revenueData;
+            const firstVal = metricData[0];
+            const lastVal = metricData[metricData.length - 1];
+            const years = sortedYrs.length - 1;
+            const cagr = (years > 0 && firstVal > 0) ? ((Math.pow(lastVal / firstVal, 1 / years) - 1) * 100).toFixed(1) : 'N/A';
+            const yoy = metricData.length > 1 ? (((metricData[metricData.length - 1] - metricData[metricData.length - 2]) / metricData[metricData.length - 2]) * 100).toFixed(1) : 'N/A';
+
+            document.getElementById('drill-cagr').innerText = cagr + (cagr !== 'N/A' ? '%' : '');
+            document.getElementById('drill-yoy').innerText = yoy + (yoy !== 'N/A' ? '%' : '');
+            document.getElementById('drill-stats').classList.remove('hidden');
+
+            const drillEl = document.getElementById('drillChart');
+            const radarEl = document.getElementById('radarChart');
+            
+            const existingDrill = Chart.getChart(drillEl);
+            if (existingDrill) existingDrill.destroy();
+            
+            const existingRadar = Chart.getChart(radarEl);
+            if (existingRadar) existingRadar.destroy();
+
+            state.charts.drill = new Chart(drillEl, {
+                type: 'line',
+                data: {
+                    labels: sortedYrs,
+                    datasets: [
+                        { label: 'Revenue', data: revenueData, borderColor: '#818cf8', backgroundColor: 'transparent', tension: 0, pointRadius: 6, borderWidth: 5 },
+                        { label: 'Rev Trend', data: revTrend, borderColor: '#818cf8', backgroundColor: 'transparent', borderDash: [6, 4], pointRadius: 0, borderWidth: 1.5 },
+                        { label: 'Profit', data: profitData, borderColor: '#10b981', backgroundColor: 'transparent', tension: 0, pointRadius: 6, borderWidth: 5 },
+                        { label: 'Profit Trend', data: profTrend, borderColor: '#10b981', backgroundColor: 'transparent', borderDash: [6, 4], pointRadius: 0, borderWidth: 1.5 }
+                    ]
+                },
+                options: { 
+                    responsive: true, maintainAspectRatio: false, 
+                    interaction: { mode: 'index', intersect: false },
+                    plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11, weight: 'bold' } } } },
+                    scales: { y: { ticks: { callback: v => '₱' + v.toLocaleString() }, grid: { color: '#e2e8f0' } } }
+                }
+            });
+
+            // Radar Chart Logic
+            const catItems = state.data.filter(d => d.category === category);
+            
+            const catAvg = {
+                rev: catItems.length ? catItems.reduce((a,b)=>a+b.revenue,0) / catItems.length : 0,
+                prof: catItems.length ? catItems.reduce((a,b)=>a+b.profit,0) / catItems.length : 0
+            };
+            
+            // Calculate category average margin safely (avoid NaN/Infinity)
+            const catAvgMargin = catItems.length 
+                ? catItems.reduce((a,b) => a + (b.revenue ? (b.profit/b.revenue*100) : 0), 0) / catItems.length 
+                : 0;
+            
+            const currentItem = list.find(i => i.name === name) || { revenue: 0, profit: 0, margin: 0 };
+            
+            const safeVal = (val, avg) => (avg && avg !== 0) ? (val / avg) * 50 : 0;
+            const cagrVal = parseFloat(cagr) || 0;
+            const yoyVal = parseFloat(yoy) || 0;
+
+            state.charts.radar = new Chart(radarEl, {
+                type: 'radar',
+                data: {
+                    labels: ['Revenue', 'Profit', 'Margin', 'CAGR', 'YoY'],
+                    datasets: [
+                        { label: 'This Item', data: [safeVal(currentItem.revenue, catAvg.rev), safeVal(currentItem.profit, catAvg.prof), currentItem.margin || 0, cagrVal, yoyVal], borderColor: '#6366f1', backgroundColor: 'rgba(99, 102, 241, 0.2)' },
+                        { label: 'Category Avg', data: [50, 50, catAvgMargin, 10, 10], borderColor: '#94a3b8', backgroundColor: 'rgba(148, 163, 184, 0.1)' }
+                    ]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    scales: { r: { beginAtZero: true, ticks: { display: false } } },
+                    plugins: { legend: { position: 'bottom' } }
+                }
+            });
+
+            render(true); // Refresh table highlight without re-rendering main charts
+        };
+
+        const closeDrill = () => {
+            state.drillItem = null;
+            document.getElementById('drill-placeholder').classList.remove('hidden');
+            document.getElementById('drill-chart-wrapper').classList.add('hidden');
+            document.getElementById('radar-chart-wrapper').classList.add('hidden');
+            document.getElementById('drill-name').innerText = 'Identity Tracker';
+            document.getElementById('drill-cat').innerText = 'Select an item to track';
+            render();
+        };
+
+        const renderCharts = (list, scopeData) => {
+            // Robust cleanup using Chart.getChart to prevent "Canvas in use" errors
+            ['trendChart', 'barChart', 'paretoChart', 'scatterChart', 'heroChart'].forEach(id => {
+                const chart = Chart.getChart(id);
+                if (chart) chart.destroy();
+            });
+
+            const THEMES = {
+                default: ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4', '#f97316'],
+                ocean: ['#0ea5e9', '#0284c7', '#0369a1', '#075985', '#0c4a6e', '#0891b2', '#0e7490', '#155e75'],
+                sunset: ['#f97316', '#ea580c', '#c2410c', '#9a3412', '#7c2d12', '#f43f5e', '#e11d48', '#be123c'],
+                forest: ['#10b981', '#059669', '#047857', '#065f46', '#064e3b', '#14b8a6', '#0d9488', '#0f766e'],
+                monochrome: ['#64748b', '#475569', '#334155', '#1e293b', '#0f172a', '#94a3b8', '#cbd5e1', '#e2e8f0'],
+                vintage: ['#78350f', '#4c1d95', '#064e3b', '#831843', '#1e3a8a', '#422006', '#111827', '#374151'],
+                neon: ['#f472b6', '#22d3ee', '#fbbf24', '#4ade80', '#818cf8', '#f87171', '#fb7185', '#c084fc'],
+                berry: ['#701a75', '#86198f', '#ae21ad', '#d946ef', '#f0abfc', '#f5d0fe', '#fae8ff', '#df73ff'],
+                earth: ['#451a03', '#78350f', '#92400e', '#b45309', '#d97706', '#f59e0b', '#fbbf24', '#fcd34d'],
+                cyberpunk: ['#00f2ff', '#ff00ff', '#7000ff', '#b100ff', '#001eff', '#00ff9f', '#ff0055', '#ffbd00']
+            };
+            const activeTheme = THEMES[state.treemapTheme] || THEMES.default;
+            const colors = activeTheme;
+            
+            // Update Chart Defaults for Dark Mode
+            Chart.defaults.color = state.darkMode ? '#94a3b8' : '#64748b';
+            Chart.defaults.scale.grid.color = state.darkMode ? '#334155' : '#e2e8f0';
+
+            if (state.mainTab === 'analytics') {
+                const trendData = (scopeData || getFilteredData()).filter(i => {
+                    if (state.viewMode === 'item' && !i.item_name) return false;
+                    return true;
+                });
+                const annual = trendData.reduce((acc, curr) => {
+                    if (!acc[curr.sale_year]) acc[curr.sale_year] = { revenue: 0, profit: 0 };
+                    acc[curr.sale_year].revenue += curr.revenue;
+                    acc[curr.sale_year].profit += curr.profit;
+                    return acc;
+                }, {});
+                const sortedYrs = Object.keys(annual).sort();
+
+                state.charts.trend = new Chart(document.getElementById('trendChart'), {
+                    type: 'line',
+                    data: { labels: sortedYrs, datasets: [{ label: state.metric.toUpperCase(), data: sortedYrs.map(y => annual[y][state.metric]), borderColor: '#6366f1', tension: 0.3, fill: true, backgroundColor: 'rgba(99, 102, 241, 0.1)' }] },
+                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+                });
+
+                const displayLimit = state.searchTerm ? 50 : state.topX;
+                const topXData = [...list].sort((a,b) => b[state.metric] - a[state.metric]).slice(0, displayLimit);
+                const labels = topXData.map(d => d.name.substring(0, 15));
+                state.charts.bar = new Chart(document.getElementById('barChart'), {
+                    type: 'bar',
+                    data: { labels, datasets: [{ data: topXData.map(d => d[state.metric]), backgroundColor: colors, borderRadius: 6 }] },
+                    options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+                });
+
+                // Pareto Chart Logic
+                const sortedForPareto = [...list].sort((a, b) => b[state.metric] - a[state.metric]).slice(0, state.paretoTopX);
+                const totalVal = list.reduce((a, b) => a + b[state.metric], 0);
+                let cumulative = 0;
+                const cumulativeData = sortedForPareto.map(d => {
+                    cumulative += d[state.metric];
+                    return (cumulative / totalVal) * 100;
+                });
+
+                state.charts.pareto = new Chart(document.getElementById('paretoChart'), {
+                    type: 'bar',
+                    data: {
+                        labels: sortedForPareto.map(d => d.name.substring(0, 12)),
+                        datasets: [
+                            { label: state.metric.toUpperCase(), data: sortedForPareto.map(d => d[state.metric]), backgroundColor: '#6366f1', borderRadius: 4, yAxisID: 'y' },
+                            { label: 'Cumulative %', data: cumulativeData, type: 'line', borderColor: '#10b981', borderWidth: 3, pointRadius: 4, backgroundColor: 'transparent', yAxisID: 'y1', tension: 0.3 }
+                        ]
+                    },
+                    options: {
+                        responsive: true, maintainAspectRatio: false,
+                        scales: {
+                            y: { beginAtZero: true, position: 'left', grid: { display: false }, ticks: { callback: v => '₱' + v.toLocaleString() } },
+                            y1: { beginAtZero: true, position: 'right', max: 100, grid: { drawOnChartArea: false }, ticks: { callback: v => v + '%' } }
+                        },
+                        plugins: {
+                            legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10, weight: 'bold' } } }
+                        }
+                    }
+                });
+
+                if (state.heroChartType === 'treemap') {
+                    const wrapText = (text, maxLength) => {
+                        if (!text) return [];
+                        const words = text.split(' ');
+                        const lines = [];
+                        let currentLine = words[0];
+                        for (let i = 1; i < words.length; i++) {
+                            if (currentLine.length + 1 + words[i].length <= maxLength) {
+                                currentLine += ' ' + words[i];
+                            } else {
+                                lines.push(currentLine);
+                                currentLine = words[i];
+                            }
+                        }
+                        lines.push(currentLine);
+                        return lines;
+                    };
+
+                    const zoomBtn = document.getElementById('treemap-zoom-out');
+                    if (state.zoomedCategory) {
+                        zoomBtn.classList.remove('hidden');
+                        zoomBtn.onclick = () => { state.zoomedCategory = null; render(); };
+                    } else {
+                        zoomBtn.classList.add('hidden');
+                    }
+
+                    const catGlobalContrib = {};
+                    if (state.viewMode === 'category') {
+                        list.forEach(c => catGlobalContrib[c.name] = c.contribution);
+                    } else {
+                        list.forEach(i => {
+                            if (!catGlobalContrib[i.category]) catGlobalContrib[i.category] = 0;
+                            catGlobalContrib[i.category] += i.contribution;
+                        });
+                    }
+
+                    let treeData, groups;
+                    if (state.zoomedCategory) {
+                        const filteredRaw = (scopeData || getFilteredData()).filter(item => item.category === state.zoomedCategory);
+                        const agg = {};
+                        let totalMetric = 0;
+                        filteredRaw.forEach(d => {
+                            if (!agg[d.item_name]) agg[d.item_name] = { name: d.item_name, category: d.category, revenue: 0, profit: 0 };
+                            agg[d.item_name].revenue += d.revenue;
+                            agg[d.item_name].profit += d.profit;
+                            totalMetric += d[state.metric];
+                        });
+                        const globalTotal = list.reduce((a,b) => a + b[state.metric], 0);
+                        treeData = Object.values(agg).map(i => ({ ...i, contribution: globalTotal ? (i[state.metric] / globalTotal) * 100 : 0, groupContribution: totalMetric ? (i[state.metric] / totalMetric) * 100 : 0 })).sort((a,b) => b.contribution - a.contribution);
+                        groups = ['name'];
+                    } else {
+                        treeData = [...list].sort((a,b) => b.contribution - a.contribution).slice(0, displayLimit);
+                        groups = (state.viewMode === 'item' || state.searchTerm) ? ['category', 'name'] : ['name'];
+                    }
+
+                    state.charts.hero = new Chart(document.getElementById('heroChart'), {
+                        type: 'treemap',
+                        data: {
+                            datasets: [{
+                                tree: treeData,
+                                key: 'contribution',
+                                groups: groups,
+                                spacing: 1, borderWidth: 0, borderRadius: 6,
+                                backgroundColor: (ctx) => ctx.type === 'data' ? activeTheme[ctx.dataIndex % activeTheme.length] : 'rgba(241, 245, 249, 0.5)',
+                                labels: {
+                                    display: true,
+                                    formatter: (ctx) => ctx.type === 'data' ? wrapText(ctx.raw._data?.name, 12) : (ctx.raw.g || ''),
+                                    font: { size: 10, weight: 'bold' },
+                                    color: (ctx) => ctx.type === 'data' ? 'white' : '#64748b'
+                                }
+                            }]
+                        },
+                        options: { 
+                            responsive: true, 
+                            maintainAspectRatio: false, 
+                            onClick: (e, elements) => {
+                                if (!elements.length) return;
+                                const item = elements[0].element.$context.raw._data;
+                                if (!item) return;
+                                
+                                if (state.zoomedCategory) {
+                                    openQuickEdit(item.name, item.category);
+                                } else {
+                                    const cat = state.viewMode === 'category' ? item.name : item.category;
+                                    if (cat) { state.zoomedCategory = cat; render(); }
+                                }
+                            },
+                            plugins: { 
+                                legend: { display: false },
+                                tooltip: {
+                                    callbacks: {
+                                        title: () => null,
+                                        label: (ctx) => {
+                                            const item = ctx.raw._data;
+                                            
+                                            if (!item && ctx.raw.g) {
+                                                const catName = ctx.raw.g;
+                                                const globalPct = catGlobalContrib[catName];
+                                                return globalPct ? `${catName}: ${globalPct.toFixed(1)}% (Global)` : catName;
+                                            }
+
+                                            if (!item) return '';
+                                            
+                                            if (state.viewMode === 'category' && !state.zoomedCategory) {
+                                                return `${item.name}: ${item.contribution.toFixed(2)}% (Global)`;
+                                            }
+                                            
+                                            let pctOfCat = item.groupContribution;
+                                            if (pctOfCat === undefined) {
+                                                const catTotal = catGlobalContrib[item.category] || 0;
+                                                pctOfCat = catTotal ? (item.contribution / catTotal) * 100 : 0;
+                                            }
+                                            
+                                            return `${item.name}: ${pctOfCat.toFixed(2)}% (of Category)`;
+                                        }
+                                    }
+                                }
+                            } 
+                        }
+                    });
+                } else if (state.heroChartType === 'sunburst') {
+                    if (Chart.registry && !Chart.registry.controllers.get('sunburst')) {
+                        console.warn('Sunburst controller not registered. Fallback to Treemap.');
+                        state.heroChartType = 'treemap';
+                        renderCharts(list);
+                        return;
+                    }
+                    try {
+                        state.charts.hero = new Chart(document.getElementById('heroChart'), {
+                            type: 'sunburst',
+                            data: {
+                                labels: [...list].sort((a,b) => b.contribution - a.contribution).slice(0, displayLimit).map(i => i.name),
+                                datasets: [{
+                                    tree: [...list].sort((a,b) => b.contribution - a.contribution).slice(0, displayLimit),
+                                    key: 'contribution',
+                                    groups: (state.viewMode === 'item' || state.searchTerm) ? ['category', 'name'] : ['name'],
+                                    backgroundColor: (ctx) => activeTheme[ctx.dataIndex % activeTheme.length]
+                                }],
+                                labels: []
+                            },
+                            options: { responsive: true, maintainAspectRatio: false }
+                        });
+                    } catch (e) { console.error("Sunburst Error:", e); }
+                } else if (state.heroChartType === 'waterfall') {
+                    const waterfallData = [];
+                    let running = 0;
+                    [...list].sort((a,b) => b[state.metric] - a[state.metric]).slice(0, displayLimit).forEach(item => {
+                        waterfallData.push({ x: item.name, y: [running, running + item[state.metric]] });
+                        running += item[state.metric];
+                    });
+                    state.charts.hero = new Chart(document.getElementById('heroChart'), {
+                        type: 'bar',
+                        data: {
+                            datasets: [{
+                                label: 'Contribution',
+                                data: waterfallData,
+                                backgroundColor: activeTheme[0],
+                                borderRadius: 4
+                            }]
+                        },
+                        options: {
+                            responsive: true, maintainAspectRatio: false,
+                            scales: { y: { beginAtZero: true, ticks: { callback: v => '₱' + v.toLocaleString() } } }
+                        }
+                    });
+                }
+            } else {
+                let scatterData = [];
+                const method = state.scatterNormalization;
+                const labelEl = document.getElementById('matrix-benchmark');
+
+                if (method === 'linear') {
+                    labelEl.innerText = 'Axes normalized to % of Max Performers';
+                    const maxRev = Math.max(...list.map(i => i.revenue)) || 1;
+                    const maxMargin = Math.max(...list.map(i => i.margin)) || 1;
+                    scatterData = list.map(i => ({
+                        x: (i.revenue / maxRev) * 100,
+                        y: (i.margin / maxMargin) * 100,
+                        label: i.name, rawRev: i.revenue, rawMargin: i.margin, rawProfit: i.profit, category: i.category
+                    }));
+                } else if (method === 'percentile') {
+                    labelEl.innerText = 'Axes normalized by Percentile Rank';
+                    const revSorted = [...list].sort((a,b) => a.revenue - b.revenue);
+                    const marginSorted = [...list].sort((a,b) => a.margin - b.margin);
+                    const revMap = new Map(revSorted.map((item, i) => [item, i]));
+                    const marginMap = new Map(marginSorted.map((item, i) => [item, i]));
+                    scatterData = list.map(i => ({
+                        x: (revMap.get(i) / (list.length - 1 || 1)) * 100,
+                        y: (marginMap.get(i) / (list.length - 1 || 1)) * 100,
+                        label: i.name, rawRev: i.revenue, rawMargin: i.margin, rawProfit: i.profit, category: i.category
+                    }));
+                } else {
+                    // Logistic (Default)
+                    labelEl.innerText = 'Axes normalized via Logistic Scale (Z-Score)';
+                    const getStats = (arr) => {
+                        const n = arr.length;
+                        if (!n) return { mean: 0, std: 1 };
+                        const mean = arr.reduce((a, b) => a + b, 0) / n;
+                        const variance = arr.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / n;
+                        return { mean, std: Math.sqrt(variance) || 1 };
+                    };
+                    const revStats = getStats(list.map(i => i.revenue));
+                    const marginStats = getStats(list.map(i => i.margin));
+                    const logistic = (val, stats) => {
+                        const z = (val - stats.mean) / stats.std;
+                        return (1 / (1 + Math.exp(-z))) * 100;
+                    };
+                    scatterData = list.map(i => ({
+                        x: logistic(i.revenue, revStats),
+                        y: logistic(i.margin, marginStats),
+                        label: i.name, rawRev: i.revenue, rawMargin: i.margin, rawProfit: i.profit, category: i.category
+                    }));
+                }
+
+                const sortedX = [...scatterData].sort((a,b)=>a.x - b.x);
+                const sortedY = [...scatterData].sort((a,b)=>a.y - b.y);
+                const mid = Math.floor(scatterData.length / 2);
+                const medX = sortedX[mid]?.x || 50;
+                const medY = sortedY[mid]?.y || 50;
+
+                const uniqueCats = [...new Set(scatterData.map(d => d.category))];
+                const catColors = {};
+                if (uniqueCats.length > 0) {
+                    const palette = ['#ef4444', '#f97316', '#f59e0b', '#84cc16', '#10b981', '#06b6d4', '#3b82f6', '#6366f1', '#8b5cf6', '#d946ef', '#f43f5e'];
+                    uniqueCats.forEach((c, i) => catColors[c] = palette[i % palette.length]);
+                }
+
+                // Search Term Coloring Logic
+                const rawTerms = state.searchTerm ? state.searchTerm.toLowerCase().split('+').map(t => t.trim()).filter(t => t) : [];
+                const searchTerms = rawTerms.map(t => t.split(' -')[0].trim()).filter(t => t);
+                const termColors = ['#ef4444', '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6']; // Red, Blue, Green, Amber, Purple
+                
+                if (searchTerms.length > 0) {
+                    scatterData.forEach(d => {
+                        const iName = (d.label || '').toLowerCase();
+                        const iCat = (d.category || '').toLowerCase();
+                        const matches = [];
+                        d.matchedTerms = [];
+                        searchTerms.forEach((term, idx) => {
+                            if (iName.includes(term) || iCat.includes(term)) {
+                                matches.push(termColors[idx % termColors.length]);
+                                d.matchedTerms.push(idx);
+                            }
+                        });
+                        
+                        if (matches.length === 1) d.termColor = matches[0];
+                        else if (matches.length >= 2) d.termColor = (typeof d3 !== 'undefined') ? d3.interpolateRgb(matches[0], matches[1])(0.5) : matches[0];
+                        else d.termColor = 'white';
+                    });
+                }
+
+                const legendEl = document.getElementById('scatter-legend');
+                if (legendEl) {
+                    let html = '';
+                    if (searchTerms.length > 0) {
+                        html = searchTerms.map((t, i) => `
+                            <div class="flex items-center gap-2 px-3 py-1.5 bg-slate-50 rounded-full border border-slate-100 shadow-sm">
+                                <span class="w-2 h-2 rounded-full" style="background-color: ${termColors[i % termColors.length]}"></span>
+                                <span class="text-xs font-bold text-slate-600">${t}</span>
+                            </div>`).join('');
+                    } else if (uniqueCats.length > 0) {
+                        html = uniqueCats.sort().map(c => `
+                            <div class="flex items-center gap-2 px-3 py-1.5 bg-slate-50 rounded-full border border-slate-100 shadow-sm">
+                                <span class="w-2 h-2 rounded-full" style="background-color: ${catColors[c]}"></span>
+                                <span class="text-xs font-bold text-slate-600">${c}</span>
+                            </div>`).join('');
+                    }
+                    legendEl.innerHTML = html;
+                    legendEl.classList.toggle('hidden', html === '');
+                }
+
+                state.charts.scatter = new Chart(document.getElementById('scatterChart'), {
+                    type: 'scatter',
+                    data: {
+                        datasets: [{
+                            data: scatterData,
+                            backgroundColor: (ctx) => {
+                                const v = ctx.raw;
+                                if (!v) return '#1e293b';
+                                if (searchTerms.length > 0 && v.termColor) return v.termColor;
+                                if (uniqueCats.length > 0 && v.category) return catColors[v.category];
+                                return '#64748b';
+                            },
+                            borderColor: 'transparent',
+                            borderWidth: 0,
+                            pointRadius: 8, pointHoverRadius: 12
+                        }]
+                    },
+                    options: {
+                        responsive: true, maintainAspectRatio: false,
+                        onClick: (e, elements) => {
+                            if (!elements.length) return;
+                            const point = elements[0].element.$context.raw;
+                            document.getElementById('scatter-modal-name').innerText = point.label;
+                            document.getElementById('scatter-modal-category').innerText = point.category;
+                            document.getElementById('scatter-modal-profit').innerText = '₱' + point.rawProfit.toLocaleString();
+                            document.getElementById('scatter-modal-revenue').innerText = '₱' + point.rawRev.toLocaleString();
+                            document.getElementById('scatter-modal-margin').innerText = point.rawMargin.toFixed(1) + '%';
+                            document.getElementById('scatter-point-modal').classList.remove('hidden');
+                        },
+                        plugins: { 
+                            tooltip: { callbacks: { label: (ctx) => `${ctx.raw.label}: ₱${ctx.raw.rawRev.toLocaleString()} (${ctx.raw.rawMargin.toFixed(1)}%)` } },
+                            zoom: {
+                                pan: { enabled: true, mode: 'xy' },
+                                zoom: { wheel: { enabled: true }, pinch: { enabled: true }, mode: 'xy' }
+                            }
+                        },
+                        scales: { x: { min: -5, max: 105, title: { display: true, text: 'Volume Index (%)' } }, y: { min: -5, max: 105, title: { display: true, text: 'Efficiency Index (%)' } } }
+                    },
+                    plugins: [
+                    {
+                        id: 'groupViz',
+                        beforeDatasetsDraw: (chart) => {
+                            const { ctx, scales: { x, y } } = chart;
+                            
+                            let groups = [];
+                            if (searchTerms.length > 0) {
+                                groups = searchTerms.map((term, idx) => ({
+                                    label: term,
+                                    color: termColors[idx % termColors.length],
+                                    points: scatterData.filter(d => d.matchedTerms && d.matchedTerms.includes(idx))
+                                }));
+                            } else if (uniqueCats.length > 0) {
+                                groups = uniqueCats.map(cat => ({
+                                    label: cat,
+                                    color: catColors[cat] || '#64748b',
+                                    points: scatterData.filter(d => d.category === cat)
+                                }));
+                            }
+
+                            if (state.scatterGroupViz === 'hull' && typeof d3 !== 'undefined') {
+                                groups.forEach(g => {
+                                    const points = g.points.map(d => [x.getPixelForValue(d.x), y.getPixelForValue(d.y)]);
+                                    if (points.length < 3) return;
+                                    const hull = d3.polygonHull(points);
+                                    if (hull) {
+                                        ctx.save();
+                                        ctx.fillStyle = g.color + '20'; ctx.strokeStyle = g.color; ctx.lineWidth = 2;
+                                        ctx.beginPath(); hull.forEach((p, i) => i === 0 ? ctx.moveTo(p[0], p[1]) : ctx.lineTo(p[0], p[1])); ctx.closePath();
+                                        ctx.fill(); ctx.stroke(); ctx.restore();
+                                    }
+                                });
+                            } else if (state.scatterGroupViz === 'centroid') {
+                                groups.forEach(g => {
+                                    if (!g.points.length) return;
+                                    const avgX = g.points.reduce((a, b) => a + b.x, 0) / g.points.length;
+                                    const avgY = g.points.reduce((a, b) => a + b.y, 0) / g.points.length;
+                                    const px = x.getPixelForValue(avgX), py = y.getPixelForValue(avgY);
+                                    ctx.save();
+                                    ctx.strokeStyle = g.color; ctx.lineWidth = 3;
+                                    ctx.beginPath(); ctx.moveTo(px - 8, py - 8); ctx.lineTo(px + 8, py + 8); ctx.moveTo(px + 8, py - 8); ctx.lineTo(px - 8, py + 8); ctx.stroke();
+                                    ctx.fillStyle = state.darkMode ? '#fff' : '#1e293b'; ctx.font = 'bold 10px Inter';
+                                    ctx.fillText(g.label.toUpperCase(), px + 10, py + 3);
+                                    ctx.restore();
+                                });
+                            }
+                        }
+                    },
+                    {
+                        id: 'quadColors',
+                        beforeDraw: (chart) => {
+                            const { ctx, chartArea: { left, top, right, bottom }, scales: { x, y } } = chart;
+                            const pxX = x.getPixelForValue(medX), pxY = y.getPixelForValue(medY);
+                            ctx.fillStyle = '#ecfdf5'; ctx.fillRect(pxX, top, right - pxX, pxY - top); // Winners
+                            ctx.fillStyle = '#eef2ff'; ctx.fillRect(left, top, pxX - left, pxY - top); // Sleepers
+                            ctx.fillStyle = '#fffbeb'; ctx.fillRect(pxX, pxY, right - pxX, bottom - pxY); // Cash Cows
+                            ctx.fillStyle = '#fff1f2'; ctx.fillRect(left, pxY, pxX - left, bottom - pxY); // Dogs
+                            ctx.strokeStyle = 'rgba(0,0,0,0.1)'; ctx.setLineDash([5, 5]); ctx.lineWidth = 2;
+                            ctx.beginPath(); ctx.moveTo(pxX, top); ctx.lineTo(pxX, bottom); ctx.stroke();
+                            ctx.beginPath(); ctx.moveTo(left, pxY); ctx.lineTo(right, pxY); ctx.stroke();
+                        }
+                    }]
+                });
+
+                const quads = { winners: [], cashCows: [], sleepers: [], dogs: [] };
+                scatterData.forEach(d => {
+                    if (d.x >= medX && d.y >= medY) quads.winners.push(d);
+                    else if (d.x >= medX && d.y < medY) quads.cashCows.push(d);
+                    else if (d.x < medX && d.y >= medY) quads.sleepers.push(d);
+                    else quads.dogs.push(d);
+                });
+                currentQuads = quads;
+                renderQuadGrid(quads);
+            }
+        };
+
+        const renderQuadGrid = (q) => {
+            const grid = document.getElementById('quadrant-grid');
+            const cfg = [
+                { k: 'winners', t: 'Winners', s: 'High Vol/High Margin', c: 'text-emerald-600', b: 'bg-emerald-50' },
+                { k: 'sleepers', t: 'Sleepers', s: 'Efficiency Gems', c: 'text-indigo-600', b: 'bg-indigo-50' },
+                { k: 'cashCows', t: 'Cash Cows', s: 'Traffic Drivers', c: 'text-amber-600', b: 'bg-amber-50' },
+                { k: 'dogs', t: 'Dogs', s: 'Review Shelf-Space', c: 'text-rose-600', b: 'bg-rose-50' }
+            ];
+            grid.innerHTML = cfg.map(c => `
+                <div onclick="showQuadrantModal('${c.k}')" class="p-6 rounded-3xl border border-slate-200 shadow-sm ${c.b} transition-all cursor-pointer hover:scale-[1.02] active:scale-[0.98]">
+                    <div class="flex justify-between items-start">
+                        <div><h4 class="text-xs font-black uppercase tracking-widest ${c.c}">${c.t}</h4><p class="text-[9px] font-bold text-slate-400 uppercase mt-0.5">${c.s}</p></div>
+                        <span class="text-2xl font-black text-slate-800">${q[c.k].length}</span>
+                    </div>
+                </div>`).join('');
+        };
+
+        const renderOutliers = () => {
+            const panel = document.getElementById('outlier-panel');
+            panel.className = (state.outliers.length || state.excludedYears.length) ? 'mt-8 bg-slate-900 rounded-3xl p-8 text-white shadow-xl shadow-slate-300' : 'hidden';
+            
+            const items = state.outliers.map(id => `
+                <div class="bg-slate-800 border border-slate-700 px-3 py-1.5 rounded-full flex items-center gap-2 text-xs font-bold transition-all hover:bg-slate-700">
+                    <span class="text-slate-500 text-[8px] uppercase font-black">Item</span>
+                    <span>${id}</span>
+                    <button onclick="toggleOutlier('${id}')" class="text-rose-400 hover:text-white transition-colors"><i data-lucide="refresh-cw" class="w-3 h-3"></i></button>
+                </div>`).join('');
+
+            const years = state.excludedYears.map(yr => `
+                <div class="bg-indigo-900 border border-indigo-800 px-3 py-1.5 rounded-full flex items-center gap-2 text-xs font-bold transition-all hover:bg-indigo-800">
+                    <span class="text-indigo-400 text-[8px] uppercase font-black">Year</span>
+                    <span>${yr}</span>
+                    <button onclick="toggleYearExclusion('${yr}')" class="text-rose-400 hover:text-white transition-colors"><i data-lucide="refresh-cw" class="w-3 h-3"></i></button>
+                </div>`).join('');
+
+            document.getElementById('outlier-list').innerHTML = items + years;
+        };
+
+        const toggleOutlier = (id) => {
+            state.outliers = state.outliers.includes(id) ? state.outliers.filter(o => o !== id) : [...state.outliers, id];
+            localStorage.setItem('ospos_report_outliers', JSON.stringify(state.outliers));
+            render();
+        };
+
+        const toggleYearExclusion = (yr) => {
+            const yrStr = yr.toString();
+            state.excludedYears = state.excludedYears.includes(yrStr) 
+                ? state.excludedYears.filter(y => y !== yrStr) 
+                : [...state.excludedYears, yrStr];
+            localStorage.setItem('ospos_report_excluded_years', JSON.stringify(state.excludedYears));
+            
+            if (state.selectedYear === yrStr) {
+                state.selectedYear = 'all';
+                document.getElementById('year-select').value = 'all';
+            }
+            render();
+        };
+
+        const showQuadrantModal = (key) => {
+            const cfg = {
+                winners: { t: 'Winners', s: 'High Volume & High Efficiency' },
+                sleepers: { t: 'Sleepers', s: 'Efficiency Gems' },
+                cashCows: { t: 'Cash Cows', s: 'High Volume Traffic Drivers' },
+                dogs: { t: 'Dogs', s: 'Review Shelf-Space' }
+            };
+            
+            const items = [...currentQuads[key]].sort((a, b) => {
+                const valA = state.metric === 'profit' ? a.rawProfit : a.rawRev;
+                const valB = state.metric === 'profit' ? b.rawProfit : b.rawRev;
+                return valB - valA;
+            });
+            
+            document.getElementById('modal-title').innerText = cfg[key].t;
+            document.getElementById('modal-subtitle').innerText = cfg[key].s;
+            
+            const tbody = document.getElementById('modal-table-body');
+            tbody.innerHTML = items.map(item => `
+                <tr class="hover:bg-slate-50 transition-colors">
+                    <td class="py-4 pr-4">
+                        <p class="font-bold text-slate-700">${item.label}</p>
+                    </td>
+                    <td class="py-4 text-right text-slate-500 font-medium">₱${item.rawRev.toLocaleString()}</td>
+                    <td class="py-4 text-right font-black text-emerald-600">₱${item.rawProfit.toLocaleString()}</td>
+                </tr>
+            `).join('');
+            
+            document.getElementById('quadrant-modal').classList.remove('hidden');
+            lucide.createIcons();
+        };
+
+        const closeModal = () => { document.getElementById('quadrant-modal').classList.add('hidden'); };
+
+        // --- CATEGORY MANAGER ---
+        const openCatMgr = () => {
+            const categories = [...new Set(state.data.map(d => d.category))].sort();
+            const select = document.getElementById('cat-mgr-source');
+            select.innerHTML = categories.map(c => `<option value="${c}">${c || '[Empty / Uncategorized]'}</option>`).join('');
+            
+            const updateStats = () => {
+                const val = select.value;
+                const count = state.data.filter(d => d.category === val).length;
+                document.getElementById('cat-mgr-count').innerText = count;
+                document.getElementById('cat-mgr-stats').classList.remove('hidden');
+                renderCatItems(val);
+            };
+            select.onchange = updateStats;
+            updateStats();
+            
+            document.getElementById('cat-mgr-modal').classList.remove('hidden');
+            lucide.createIcons();
+        };
+
+        const closeCatMgr = () => document.getElementById('cat-mgr-modal').classList.add('hidden');
+
+        // --- ITEM MANAGER ---
+        const openItemMgr = () => {
+            document.getElementById('item-mgr-modal').classList.remove('hidden');
+            renderItemMgrItems();
+            lucide.createIcons();
+        };
+
+        const closeItemMgr = () => document.getElementById('item-mgr-modal').classList.add('hidden');
+
+        const renderItemMgrItems = () => {
+            const search = document.getElementById('item-mgr-search').value.toLowerCase();
+            const sortMode = document.getElementById('item-mgr-sort').value;
+            
+            let items = state.data.map((item, idx) => ({...item, origIdx: idx}));
+
+            if (search) {
+                items = items.filter(i => 
+                    (i.item_name && i.item_name.toLowerCase().includes(search)) || 
+                    (i.category && i.category.toLowerCase().includes(search))
+                );
+            }
+
+            items.sort((a, b) => {
+                if (sortMode === 'profit_desc') return b.profit - a.profit;
+                if (sortMode === 'profit_asc') return a.profit - b.profit;
+                if (sortMode === 'name_asc') return (a.item_name || '').localeCompare(b.item_name || '');
+                return 0;
+            });
+
+            const displayItems = items.slice(0, 100);
+            document.getElementById('item-mgr-count').innerText = `Showing ${displayItems.length} of ${items.length} matches`;
+
+            const tbody = document.getElementById('item-mgr-body');
+            if (displayItems.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="4" class="text-center py-8 text-slate-400 font-bold uppercase">No items found</td></tr>`;
+            } else {
+                tbody.innerHTML = displayItems.map(item => `
+                    <tr class="hover:bg-slate-50 group transition-colors border-b border-slate-50">
+                        <td class="px-6 py-3 font-bold text-slate-700 text-xs">${item.item_name || '<span class="text-slate-300 italic">No Name</span>'}</td>
+                        <td class="px-6 py-3 text-xs font-bold text-slate-500">${item.category}</td>
+                        <td class="px-6 py-3 text-right text-xs font-black ${item.profit >= 0 ? 'text-emerald-600' : 'text-rose-500'}">₱${item.profit.toLocaleString()}</td>
+                        <td class="px-6 py-3 text-center">
+                            <button onclick="deleteItem(${item.origIdx})" class="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all" title="Delete Item">
+                                <i data-lucide="trash-2" class="w-4 h-4"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `).join('');
+            }
+            lucide.createIcons();
+        };
+
+        window.deleteItem = async (idx) => {
+            if (!confirm("Are you sure you want to delete this item? This cannot be undone.")) return;
+            state.data.splice(idx, 1);
+            await saveToDB(state.data);
+            renderItemMgrItems();
+            render();
+        };
+
+        // --- AI SUMMARY ---
+        let lastAIChangeLog = [];
+
+        const showAISummary = (log) => {
+            lastAIChangeLog = log || [];
+            const tbody = document.getElementById('ai-summary-body');
+            const revertBtn = document.getElementById('ai-revert-btn');
+
+            if (!log || log.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="3" class="text-center py-8 text-slate-400 font-bold">No changes were made.</td></tr>';
+                if(revertBtn) revertBtn.classList.add('hidden');
+            } else {
+                if(revertBtn) revertBtn.classList.remove('hidden');
+                tbody.innerHTML = log.map(l => `
+                    <tr class="hover:bg-slate-50 transition-colors">
+                        <td class="py-3 pl-2 font-bold text-slate-700">${l.name}</td>
+                        <td class="py-3 text-slate-400 text-xs line-through decoration-slate-300">${l.oldCat}</td>
+                        <td class="py-3 text-indigo-600 font-bold text-xs flex items-center gap-1"><i data-lucide="arrow-right" class="w-3 h-3"></i> ${l.newCat}</td>
+                    </tr>
+                `).join('');
+            }
+            document.getElementById('ai-summary-modal').classList.remove('hidden');
+            lucide.createIcons();
+        };
+        const closeAISummary = () => document.getElementById('ai-summary-modal').classList.add('hidden');
+
+        // --- AI CONSOLIDATE ---
+        const closeAIConsolidate = () => document.getElementById('ai-consolidate-modal').classList.add('hidden');
+        
+        document.getElementById('btn-ai-consolidate').onclick = async () => {
+            const uncategorized = state.data.filter(d => !d.category || d.category.trim() === '');
+            if (uncategorized.length > 0) {
+                const newCat = `New Category ${Date.now().toString().slice(-4)}`;
+                uncategorized.forEach(d => d.category = newCat);
+                await saveToDB(state.data);
+                render();
+                const select = document.getElementById('cat-mgr-source');
+                if(select) {
+                    const cats = [...new Set(state.data.map(d => d.category))].sort();
+                    select.innerHTML = cats.map(c => `<option value="${c}">${c || '[Empty / Uncategorized]'}</option>`).join('');
+                }
+            }
+
+            const categories = [...new Set(state.data.map(d => d.category))].filter(c => c).sort();
+            if (categories.length < 2) return alert("Not enough categories to consolidate.");
+            
+            document.getElementById('ai-consolidate-modal').classList.remove('hidden');
+            document.getElementById('ai-consolidate-list').innerHTML = '';
+            document.getElementById('ai-consolidate-loading').classList.remove('hidden');
+            document.getElementById('ai-consolidate-empty').classList.add('hidden');
+            
+            try {
+                const suggestions = await AI.findCategoryMerges(categories);
+                document.getElementById('ai-consolidate-loading').classList.add('hidden');
+                
+                if (!suggestions || suggestions.length === 0) {
+                    document.getElementById('ai-consolidate-empty').classList.remove('hidden');
+                    return;
+                }
+                
+                const container = document.getElementById('ai-consolidate-list');
+                container.innerHTML = suggestions.map((s, i) => `
+                    <div class="flex items-center justify-between p-4 bg-slate-50 rounded-xl border border-slate-100" id="merge-row-${i}">
+                        <div class="flex items-center gap-4">
+                            <div class="text-right">
+                                <p class="text-[10px] font-black text-slate-400 uppercase">Merge From</p>
+                                <p class="font-bold text-rose-500 line-through decoration-rose-300">${s.source}</p>
+                            </div>
+                            <i data-lucide="arrow-right" class="text-slate-300"></i>
+                            <div>
+                                <p class="text-[10px] font-black text-slate-400 uppercase">Merge To</p>
+                                <p class="font-bold text-emerald-600">${s.target}</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <span class="text-[10px] font-medium text-slate-400 italic hidden sm:block">${s.reason}</span>
+                            <button onclick="applyMerge('${s.source.replace(/'/g, "\\'")}', '${s.target.replace(/'/g, "\\'")}', ${i})" class="px-4 py-2 bg-indigo-600 text-white rounded-lg text-xs font-bold hover:bg-indigo-700 transition-all shadow-sm">Merge</button>
+                        </div>
+                    </div>
+                `).join('');
+                lucide.createIcons();
+            } catch (e) {
+                alert("AI Error: " + e.message);
+                closeAIConsolidate();
+            }
+        };
+
+        window.applyMerge = async (source, target, idx) => {
+            if(!confirm(`Merge all items from "${source}" into "${target}"?`)) return;
+            let count = 0;
+            state.data.forEach(d => { if(d.category === source) { d.category = target; count++; } });
+            await saveToDB(state.data);
+            document.getElementById(`merge-row-${idx}`).innerHTML = `<div class="w-full text-center py-2 text-emerald-600 font-bold text-xs"><i data-lucide="check" class="inline w-4 h-4 mr-1"></i> Merged ${count} items</div>`;
+            lucide.createIcons();
+            
+            // Refresh dropdown if open
+            const select = document.getElementById('cat-mgr-source');
+            if(select) {
+                const categories = [...new Set(state.data.map(d => d.category))].sort();
+                const val = select.value;
+                select.innerHTML = categories.map(c => `<option value="${c}" ${c===val?'selected':''}>${c || '[Empty / Uncategorized]'}</option>`).join('');
+            }
+            render();
+        };
+
+        const revertAIChanges = async () => {
+            if (!lastAIChangeLog.length) return;
+            if (!confirm("Are you sure you want to revert these changes?")) return;
+
+            lastAIChangeLog.forEach(change => {
+                if (state.data[change.id]) state.data[change.id].category = change.oldCat;
+            });
+            
+            await saveToDB(state.data);
+            closeAISummary();
+            
+            const select = document.getElementById('cat-mgr-source');
+            const categories = [...new Set(state.data.map(d => d.category))].sort();
+            const val = select.value;
+            select.innerHTML = categories.map(c => `<option value="${c}" ${c===val?'selected':''}>${c || '[Empty / Uncategorized]'}</option>`).join('');
+            
+            renderCatItems(val);
+            render();
+            alert("Changes reverted.");
+        };
+
+        const renderCatItems = (category) => {
+            const container = document.getElementById('cat-mgr-items');
+            const items = state.data
+                .map((item, idx) => ({ ...item, originalIdx: idx }))
+                .filter(d => d.category === category);
+
+            if (items.length === 0) {
+                container.innerHTML = `<div class="flex flex-col items-center justify-center h-full text-slate-300 gap-2"><i data-lucide="inbox" class="w-8 h-8"></i><p class="text-xs font-bold uppercase">No items found</p></div>`;
+            } else {
+                container.innerHTML = items.map(item => `
+                    <div class="cat-item-row flex items-center gap-3 p-3 border-b border-slate-50 hover:bg-slate-50 focus-within:bg-indigo-50 focus-within:ring-1 focus-within:ring-indigo-100 group transition-colors">
+                        <div class="flex-1">
+                            <label class="text-[9px] font-black text-slate-300 uppercase block mb-1">Item Name</label>
+                            <input type="text" value="${item.item_name || ''}" id="name-${item.originalIdx}" 
+                                onkeydown="handleCatItemKeydown(event, ${item.originalIdx})"
+                                class="cat-name-input w-full text-xs font-bold text-slate-700 bg-transparent border-b border-transparent hover:border-slate-200 focus:border-indigo-500 py-1 outline-none transition-all placeholder-slate-300" placeholder="Item Name">
+                        </div>
+                        <div class="w-1/3">
+                            <label class="text-[9px] font-black text-slate-300 uppercase block mb-1">Category</label>
+                            <input type="text" value="${item.category}" id="cat-${item.originalIdx}" 
+                                onkeydown="handleCatItemKeydown(event, ${item.originalIdx})"
+                                class="cat-cat-input w-full text-xs font-bold text-slate-500 bg-transparent border-b border-transparent hover:border-slate-200 focus:border-indigo-500 py-1 outline-none transition-all">
+                        </div>
+                        <div class="w-16 text-right">
+                             <label class="text-[9px] font-black text-slate-300 uppercase block mb-1">Year</label>
+                             <span class="text-xs font-bold text-slate-400">${item.sale_year}</span>
+                        </div>
+                        <button onclick="updateSingleItem(${item.originalIdx})" class="p-2 text-slate-300 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all opacity-0 group-hover:opacity-100 group-focus-within:opacity-100" title="Save Changes">
+                            <i data-lucide="save" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+                `).join('');
+            }
+            lucide.createIcons();
+        };
+
+        const handleCatItemKeydown = (e, idx) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                updateSingleItem(idx);
+            } else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+                e.preventDefault();
+                const row = e.target.closest('.cat-item-row');
+                const targetRow = e.key === 'ArrowDown' ? row.nextElementSibling : row.previousElementSibling;
+                if (targetRow) {
+                    const selector = e.target.classList.contains('cat-name-input') ? '.cat-name-input' : '.cat-cat-input';
+                    const input = targetRow.querySelector(selector);
+                    if (input) input.focus();
+                }
+            }
+        };
+
+        const updateSingleItem = async (idx) => {
+            const nameInput = document.getElementById(`name-${idx}`);
+            const catInput = document.getElementById(`cat-${idx}`);
+            if (!nameInput || !catInput) return;
+
+            const newName = nameInput.value.trim();
+            const newCat = catInput.value.trim();
+            if (!newCat) return alert("Category cannot be empty");
+
+            state.data[idx].item_name = newName;
+            state.data[idx].category = newCat;
+            await saveToDB(state.data);
+            
+            const btn = nameInput.closest('div.group').querySelector('button');
+            btn.innerHTML = `<i data-lucide="check" class="w-4 h-4 text-emerald-500"></i>`;
+            btn.classList.remove('opacity-0');
+            lucide.createIcons();
+            
+            setTimeout(() => {
+                const currentCat = document.getElementById('cat-mgr-source').value;
+                renderCatItems(currentCat);
+                render();
+            }, 500);
+        };
+
+        const applyCategoryCorrection = async () => {
+            const source = document.getElementById('cat-mgr-source').value;
+            const dest = document.getElementById('cat-mgr-dest').value.trim();
+            if (!dest) return alert("Please enter a valid target category name.");
+            state.data = state.data.map(d => d.category === source ? { ...d, category: dest } : d);
+            await saveToDB(state.data);
+            closeCatMgr();
+            render();
+        };
+
+        const handleFileUpload = async (e) => {
+            const reader = new FileReader();
+            reader.onload = async (ev) => {
+                const text = ev.target.result;
+                const rows = text.split('\n').filter(r => r.trim() !== '');
+                const headers = rows[0].toLowerCase().split(',').map(h => h.trim().replace(/"/g, ''));
+
+                if (headers.includes('sale_month') && headers.includes('category')) {
+                    // Seasonality Data
+                    state.seasonalityData = rows.slice(1).map(r => {
+                        const c = r.split(',');
+                        return { year: c[0], month: parseInt(c[1]), category: c[2], revenue: parseFloat(c[3]), profit: parseFloat(c[4]) };
+                    });
+                    alert(`Loaded ${state.seasonalityData.length} seasonality records.`);
+                    if(state.mainTab === 'seasonality') renderSeasonality();
+                } else if (headers.includes('category_a') && headers.includes('attachment_count')) {
+                    // Market Basket Data
+                    state.associationsData = rows.slice(1).map(r => {
+                        const c = r.split(',');
+                        return { source: c[0], target: c[1], value: parseInt(c[2]) };
+                    });
+                    alert(`Loaded ${state.associationsData.length} association rules.`);
+                    if(state.mainTab === 'associations') renderAssociations();
+                } else {
+                    // Standard Sales Data
+                    const yrIdx = headers.findIndex(h => h.includes('year')), catIdx = headers.findIndex(h => h.includes('category')), nameIdx = headers.findIndex(h => h.includes('name')), revIdx = headers.findIndex(h => h.includes('revenue')), profIdx = headers.findIndex(h => h.includes('profit'));
+                    state.data = rows.slice(1).map(row => {
+                        const cols = row.split(',').map(c => c.trim().replace(/"/g, ''));
+                        return { sale_year: parseInt(cols[yrIdx]) || 0, category: cols[catIdx] || '', item_name: nameIdx !== -1 ? cols[nameIdx] : null, revenue: parseFloat(cols[revIdx]) || 0, profit: parseFloat(cols[profIdx]) || 0 };
+                    });
+                    await saveToDB(state.data);
+                    const yrs = [...new Set(state.data.map(d => d.sale_year))].sort((a,b) => b-a);
+                    document.getElementById('year-select').innerHTML = '<option value="all">Lifetime Combined</option>' + yrs.map(y => `<option value="${y}">${y}</option>`).join('');
+                    document.getElementById('year-select').value = state.selectedYear;
+                    updateUI();
+                }
+                // Re-init UI elements
+                document.getElementById('treemap-theme').value = state.treemapTheme;
+                document.getElementById('top-x-input').value = state.topX;
+                document.getElementById('pareto-top-x-input').value = state.paretoTopX;
+            };
+            reader.readAsText(e.target.files[0]);
+        };
+
+        const updateUI = () => {
+            // Dark Mode
+            document.documentElement.classList.toggle('dark', state.darkMode);
+            const toggleBtn = document.getElementById('dark-mode-toggle');
+            if (toggleBtn) toggleBtn.innerHTML = `<i data-lucide="${state.darkMode ? 'sun' : 'moon'}" class="w-5 h-5 text-slate-600"></i>`;
+            
+            document.getElementById('tab-analytics').className = `px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${state.mainTab === 'analytics' ? 'tab-active' : 'text-slate-500 hover:text-slate-700'}`;
+            document.getElementById('tab-matrix').className = `px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${state.mainTab === 'matrix' ? 'tab-active' : 'text-slate-500 hover:text-slate-700'}`;
+            document.getElementById('tab-seasonality').className = `px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${state.mainTab === 'seasonality' ? 'tab-active' : 'text-slate-500 hover:text-slate-700'}`;
+            document.getElementById('tab-associations').className = `px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${state.mainTab === 'associations' ? 'tab-active' : 'text-slate-500 hover:text-slate-700'}`;
+            
+            document.getElementById('analytics-content').className = state.mainTab === 'analytics' ? 'grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8' : 'hidden';
+            document.getElementById('matrix-content').className = state.mainTab === 'matrix' ? 'space-y-8 block' : 'hidden';
+            document.getElementById('seasonality-content').className = state.mainTab === 'seasonality' ? 'space-y-8 block' : 'hidden';
+            document.getElementById('associations-content').className = state.mainTab === 'associations' ? 'space-y-8 block' : 'hidden';
+            
+            document.getElementById('view-category').className = `px-4 py-1.5 rounded-lg text-[10px] font-black uppercase transition-all ${state.viewMode === 'category' ? 'tab-active' : 'text-slate-500'}`;
+            document.getElementById('view-item').className = `px-4 py-1.5 rounded-lg text-[10px] font-black uppercase transition-all ${state.viewMode === 'item' ? 'tab-active' : 'text-slate-500'}`;
+            document.getElementById('metric-profit').className = `px-4 py-1.5 rounded-lg text-[10px] font-black uppercase transition-all ${state.metric === 'profit' ? 'metric-active-profit' : 'text-slate-500'}`;
+            document.getElementById('metric-revenue').className = `px-4 py-1.5 rounded-lg text-[10px] font-black uppercase transition-all ${state.metric === 'revenue' ? 'metric-active-revenue' : 'text-slate-500'}`;
+            document.getElementById('metric-toggle-container').className = state.mainTab === 'analytics' ? 'flex bg-slate-100 p-1 rounded-xl' : 'hidden';
+            lucide.createIcons();
+            
+            if (state.mainTab === 'seasonality') renderSeasonality();
+            else if (state.mainTab === 'associations') renderAssociations();
+            else render();
+        };
+
+        const renderSeasonality = () => {
+            if (!state.seasonalityData.length) return;
+            document.getElementById('seasonality-empty').classList.add('hidden');
+            
+            const cats = [...new Set(state.seasonalityData.map(d => d.category))].sort();
+            const selA = document.getElementById('season-cat-a');
+            const selB = document.getElementById('season-cat-b');
+            
+            if (selA.options.length === 0) {
+                const opts = cats.map(c => `<option value="${c}">${c}</option>`).join('');
+                selA.innerHTML = opts; selB.innerHTML = opts;
+                if (cats.length > 1) selB.selectedIndex = 1;
+            }
+
+            const getMonthlyData = (cat) => {
+                const monthly = new Array(12).fill(0);
+                state.seasonalityData.filter(d => d.category === cat).forEach(d => {
+                    if (d.month >= 1 && d.month <= 12) monthly[d.month - 1] += d.revenue;
+                });
+                // Normalize to 0-100% of peak
+                const max = Math.max(...monthly) || 1;
+                return monthly.map(v => (v / max) * 100);
+            };
+
+            const dataA = getMonthlyData(selA.value);
+            const dataB = getMonthlyData(selB.value);
+
+            if (state.charts.seasonality) state.charts.seasonality.destroy();
+            state.charts.seasonality = new Chart(document.getElementById('seasonalityChart'), {
+                type: 'radar',
+                data: {
+                    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+                    datasets: [
+                        { label: selA.value, data: dataA, borderColor: '#4f46e5', backgroundColor: 'rgba(79, 70, 229, 0.2)', borderWidth: 3 },
+                        { label: selB.value, data: dataB, borderColor: '#f43f5e', backgroundColor: 'rgba(244, 63, 94, 0.2)', borderWidth: 3 }
+                    ]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    scales: { r: { beginAtZero: true, max: 100, ticks: { display: false } } },
+                    plugins: { legend: { position: 'top' } }
+                }
+            });
+        };
+
+        const renderAssociations = () => {
+            if (!state.associationsData.length) return;
+            const container = document.getElementById('chord-diagram-container');
+            document.getElementById('associations-empty').classList.add('hidden');
+            container.innerHTML = ''; // Clear previous
+
+            // Prepare Data for D3 Chord
+            const data = state.associationsData.slice(0, 50); // Limit to top 50 links to prevent clutter
+            const entities = [...new Set([...data.map(d => d.source), ...data.map(d => d.target)])].sort();
+            const matrix = entities.map(source => entities.map(target => {
+                const link = data.find(d => d.source === source && d.target === target);
+                return link ? link.value : 0;
+            }));
+
+            const width = 700, height = 700;
+            const outerRadius = Math.min(width, height) * 0.5 - 120;
+            const innerRadius = outerRadius - 20;
+
+            const svg = d3.select("#chord-diagram-container").append("svg")
+                .attr("viewBox", [-width / 2, -height / 2, width, height])
+                .attr("width", width).attr("height", height);
+
+            const chord = d3.chord().padAngle(0.05).sortSubgroups(d3.descending);
+            const arc = d3.arc().innerRadius(innerRadius).outerRadius(outerRadius);
+            const ribbon = d3.ribbon().radius(innerRadius);
+            const color = d3.scaleOrdinal(d3.schemeCategory10);
+
+            const chords = chord(matrix);
+
+            const group = svg.append("g").selectAll("g").data(chords.groups).join("g");
+
+            group.append("path")
+                .attr("fill", d => color(d.index))
+                .attr("stroke", d => d3.rgb(color(d.index)).darker())
+                .attr("d", arc);
+
+            group.append("text")
+                .each(d => { d.angle = (d.startAngle + d.endAngle) / 2; })
+                .attr("dy", ".35em")
+                .attr("transform", d => `
+                    rotate(${(d.angle * 180 / Math.PI - 90)})
+                    translate(${outerRadius + 10})
+                    ${d.angle > Math.PI ? "rotate(180)" : ""}
+                `)
+                .attr("text-anchor", d => d.angle > Math.PI ? "end" : "start")
+                .text(d => entities[d.index])
+                .style("font-size", "10px").style("font-weight", "bold").style("fill", "#64748b");
+
+            svg.append("g").attr("fill-opacity", 0.67).selectAll("path")
+                .data(chords).join("path")
+                .attr("d", ribbon)
+                .attr("fill", d => color(d.target.index))
+                .attr("stroke", d => d3.rgb(color(d.target.index)).darker());
+        };
+
+        // Event Listeners for new controls
+        document.getElementById('season-cat-a').onchange = renderSeasonality;
+        document.getElementById('season-cat-b').onchange = renderSeasonality;
+
+        document.getElementById('csv-upload-modal').onchange = handleFileUpload;
+        document.getElementById('js-upload-modal').onchange = handleJSUpload;
+        document.getElementById('tab-analytics').onclick = () => { state.mainTab = 'analytics'; localStorage.setItem('ospos_main_tab', 'analytics'); updateUI(); };
+        document.getElementById('tab-matrix').onclick = () => { state.mainTab = 'matrix'; localStorage.setItem('ospos_main_tab', 'matrix'); updateUI(); };
+        document.getElementById('tab-seasonality').onclick = () => { state.mainTab = 'seasonality'; localStorage.setItem('ospos_main_tab', 'seasonality'); updateUI(); };
+        document.getElementById('tab-associations').onclick = () => { state.mainTab = 'associations'; localStorage.setItem('ospos_main_tab', 'associations'); updateUI(); };
+        document.getElementById('view-category').onclick = () => { state.viewMode = 'category'; state.zoomedCategory = null; localStorage.setItem('ospos_view_mode', 'category'); updateUI(); };
+        document.getElementById('view-item').onclick = () => { state.viewMode = 'item'; state.zoomedCategory = null; localStorage.setItem('ospos_view_mode', 'item'); updateUI(); };
+        document.getElementById('metric-profit').onclick = () => { state.metric = 'profit'; localStorage.setItem('ospos_metric', 'profit'); updateUI(); };
+        document.getElementById('metric-revenue').onclick = () => { state.metric = 'revenue'; localStorage.setItem('ospos_metric', 'revenue'); updateUI(); };
+        document.getElementById('year-select').onchange = (e) => { state.selectedYear = e.target.value; localStorage.setItem('ospos_selected_year', state.selectedYear); render(); };
+        document.getElementById('top-x-input').oninput = (e) => { state.topX = parseInt(e.target.value) || 1; localStorage.setItem('ospos_top_x', state.topX); render(); };
+        document.getElementById('pareto-top-x-input').oninput = (e) => { state.paretoTopX = parseInt(e.target.value) || 1; localStorage.setItem('ospos_pareto_top_x', state.paretoTopX); render(); };
+        document.getElementById('treemap-theme').onchange = (e) => { 
+            state.treemapTheme = e.target.value; 
+            localStorage.setItem('ospos_treemap_theme', state.treemapTheme);
+            render(); 
+        };
+        document.getElementById('hero-chart-type').onchange = (e) => {
+            state.heroChartType = e.target.value;
+            localStorage.setItem('ospos_hero_chart', state.heroChartType);
+            render();
+        };
+        document.getElementById('scatter-norm-method').onchange = (e) => {
+            state.scatterNormalization = e.target.value;
+            localStorage.setItem('ospos_scatter_norm', state.scatterNormalization);
+            render();
+        };
+        document.getElementById('scatter-group-viz').onchange = (e) => {
+            state.scatterGroupViz = e.target.value;
+            render();
+        };
+        document.getElementById('dark-mode-toggle').onclick = () => {
+            state.darkMode = !state.darkMode;
+            localStorage.setItem('ospos_dark_mode', state.darkMode);
+            updateUI();
+        };
+        document.getElementById('drill-tab-trend').onclick = () => {
+            state.drillTab = 'trend';
+            document.getElementById('drill-tab-trend').className = 'px-3 py-1 rounded text-[10px] font-bold uppercase transition-all bg-slate-700';
+            document.getElementById('drill-tab-radar').className = 'px-3 py-1 rounded text-[10px] font-bold uppercase transition-all text-slate-400';
+            if (state.drillItem) trackItem(state.drillItem, document.getElementById('drill-cat').innerText);
+        };
+        document.getElementById('drill-tab-radar').onclick = () => {
+            state.drillTab = 'radar';
+            document.getElementById('drill-tab-radar').className = 'px-3 py-1 rounded text-[10px] font-bold uppercase transition-all bg-slate-700';
+            document.getElementById('drill-tab-trend').className = 'px-3 py-1 rounded text-[10px] font-bold uppercase transition-all text-slate-400';
+            if (state.drillItem) trackItem(state.drillItem, document.getElementById('drill-cat').innerText);
+        };
+        document.getElementById('table-search').oninput = debounce((e) => { state.searchTerm = e.target.value; render(); }, 250);
+        document.getElementById('clear-data').onclick = () => { if(confirm("Clear local DB?")) { saveToDB([]); localStorage.clear(); location.reload(); } };
+        document.getElementById('exclude-year-btn').onclick = () => {
+            if (state.selectedYear !== 'all') {
+                toggleYearExclusion(state.selectedYear);
+            } else {
+                alert("Select a specific year to exclude it from analysis.");
+            }
+        };
+        document.getElementById('open-cat-mgr').onclick = openCatMgr;
+        document.getElementById('cat-mgr-apply').onclick = applyCategoryCorrection;
+        document.getElementById('open-item-mgr').onclick = openItemMgr;
+        document.getElementById('item-mgr-search').oninput = debounce(() => renderItemMgrItems(), 300);
+        document.getElementById('item-mgr-sort').onchange = renderItemMgrItems;
+        
+        document.getElementById('btn-ai-categorize').onclick = async () => {
+            const currentCat = document.getElementById('cat-mgr-source').value;
+            const itemsToFix = state.data
+                .map((item, idx) => ({ ...item, originalIdx: idx }))
+                .filter(d => d.category === currentCat);
+            
+            if (itemsToFix.length === 0) return alert("No items found in this category to process.");
+            if (!confirm(`Ready to categorize ${itemsToFix.length} items using AI? This will process them in batches.`)) return;
+
+            if (typeof AI.runBatchCategorization !== 'function') {
+                alert("The AI script has not updated in your browser. Please do a hard refresh (Ctrl+Shift+R or Cmd+Shift+R).");
+                return;
+            }
+
+            const allCats = [...new Set(state.data.map(d => d.category))].filter(c => c).sort();
+            
+            const btn = document.getElementById('btn-ai-categorize');
+            const progressDiv = document.getElementById('ai-cat-progress');
+            const bar = document.getElementById('ai-cat-bar');
+            const status = document.getElementById('ai-cat-status');
+            const batchSize = parseInt(document.getElementById('ai-batch-size').value) || 50;
+            
+            btn.disabled = true;
+            btn.classList.add('opacity-50', 'cursor-not-allowed');
+            progressDiv.classList.remove('hidden');
+            
+            let changeLog = [];
+
+            await AI.runBatchCategorization(itemsToFix, allCats, async (updates, processedCount, total) => {
+                updates.forEach(u => {
+                    if (state.data[u.id]) {
+                        changeLog.push({
+                            id: u.id,
+                            name: state.data[u.id].item_name,
+                            oldCat: state.data[u.id].category,
+                            newCat: u.category
+                        });
+                        state.data[u.id].category = u.category;
+                    }
+                });
+                await saveToDB(state.data);
+                
+                const pct = Math.round((processedCount / total) * 100);
+                bar.style.width = `${pct}%`;
+                status.innerText = `Processed ${processedCount}/${total}`;
+                renderCatItems(currentCat);
+            }, batchSize);
+            
+            btn.disabled = false;
+            btn.classList.remove('opacity-50', 'cursor-not-allowed');
+            status.innerText = "Complete!";
+            setTimeout(() => {
+                progressDiv.classList.add('hidden');
+                bar.style.width = '0%';
+                render();
+                // Refresh dropdown
+                const select = document.getElementById('cat-mgr-source');
+                const categories = [...new Set(state.data.map(d => d.category))].sort();
+                select.innerHTML = categories.map(c => `<option value="${c}" ${c===currentCat?'selected':''}>${c || '[Empty / Uncategorized]'}</option>`).join('');
+                showAISummary(changeLog);
+            }, 1000);
+        };
+        
+        document.getElementById('master-sort').onchange = (e) => {
+            state.sortConfig.key = e.target.value;
+            state.sortConfig.dir = 'desc';
+            render();
+        };
+
+        // --- QUICK EDIT ---
+        let quickEditItemName = null;
+        const openQuickEdit = (name, currentCat) => {
+            quickEditItemName = name;
+            document.getElementById('quick-edit-name').value = name;
+            const categories = [...new Set(state.data.map(d => d.category))].filter(c => c).sort();
+            const select = document.getElementById('quick-edit-cat');
+            select.innerHTML = categories.map(c => `<option value="${c}" ${c === currentCat ? 'selected' : ''}>${c}</option>`).join('');
+            document.getElementById('quick-edit-modal').classList.remove('hidden');
+        };
+        const closeQuickEdit = () => {
+            document.getElementById('quick-edit-modal').classList.add('hidden');
+            quickEditItemName = null;
+        };
+        const closeScatterPointModal = () => document.getElementById('scatter-point-modal').classList.add('hidden');
+        
+        // --- DATA MANAGER ---
+        const openImportModal = () => {
+            document.getElementById('import-modal').classList.remove('hidden');
+            lucide.createIcons();
+        };
+        const closeImportModal = () => document.getElementById('import-modal').classList.add('hidden');
+        
+        const downloadDataBundle = () => {
+            const bundle = {
+                sales_data: state.data,
+                seasonality_velocity: state.seasonalityData,
+                market_basket_analysis: state.associationsData
+            };
+            const content = `window.OSPOS_DATA_BUNDLE = ${JSON.stringify(bundle, null, 2)};`;
+            const blob = new Blob([content], { type: 'text/javascript' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'ospos_data.js';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        };
+
+        const downloadCSVSample = () => {
+            const csvContent = "sale_year,category,item_name,revenue,profit\n2025,Beverages,Coca Cola 1.5L,1500,450\n2025,Snacks,Potato Chips,800,200";
+            const blob = new Blob([csvContent], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'sample_sales_data.csv';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        };
+
+        const downloadJSSample = () => {
+            const bundle = {
+                sales_data: [{ sale_year: 2025, category: "Beverages", item_name: "Sample Item", revenue: 1000, profit: 300 }],
+                seasonality_velocity: [],
+                market_basket_analysis: []
+            };
+            const content = `window.OSPOS_DATA_BUNDLE = ${JSON.stringify(bundle, null, 2)};`;
+            const blob = new Blob([content], { type: 'text/javascript' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'sample_bundle.js';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        };
+
+        function handleJSUpload(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = async (ev) => {
+                try {
+                    const content = ev.target.result.replace(/const\s+OSPOS_DATA_BUNDLE/g, 'window.OSPOS_DATA_BUNDLE');
+                    (1, eval)(content);
+                    if (window.OSPOS_DATA_BUNDLE) {
+                        await processBundleData(window.OSPOS_DATA_BUNDLE);
+                        alert("Data bundle loaded successfully!");
+                        closeImportModal();
+                    } else throw new Error("Invalid bundle format");
+                } catch (err) { alert("Error loading JS bundle: " + err.message); }
+            };
+            reader.readAsText(file);
+        };
+
+        document.getElementById('quick-edit-save').onclick = async () => {
+            if (!quickEditItemName) return;
+            const newCat = document.getElementById('quick-edit-cat').value;
+            let count = 0;
+            state.data.forEach(d => { if (d.item_name === quickEditItemName) { d.category = newCat; count++; } });
+            if (count > 0) {
+                await saveToDB(state.data);
+                render();
+                closeQuickEdit();
+            }
+        };
+
+        async function processBundleData(bundle) {
+            if (bundle.sales_data) {
+                state.data = bundle.sales_data.map(d => ({
+                    sale_year: parseInt(d.sale_year) || 0,
+                    category: d.category || '',
+                    item_name: d.item_name,
+                    revenue: parseFloat(d.revenue) || 0,
+                    profit: parseFloat(d.profit) || 0
+                }));
+                await saveToDB(state.data);
+            }
+            if (bundle.seasonality_velocity) {
+                state.seasonalityData = bundle.seasonality_velocity.map(d => ({
+                    year: parseInt(d.sale_year),
+                    month: parseInt(d.sale_month),
+                    category: d.category,
+                    revenue: parseFloat(d.revenue),
+                    profit: parseFloat(d.profit)
+                }));
+            }
+            if (bundle.market_basket_analysis) {
+                state.associationsData = bundle.market_basket_analysis.map(d => ({
+                    source: d.category_a,
+                    target: d.category_b,
+                    value: parseInt(d.attachment_count)
+                }));
+            }
+            if (state.data.length) {
+                const yrs = [...new Set(state.data.map(d => d.sale_year))].sort((a,b) => b-a);
+                document.getElementById('year-select').innerHTML = '<option value="all">Lifetime Combined</option>' + yrs.map(y => `<option value="${y}">${y}</option>`).join('');
+                document.getElementById('year-select').value = state.selectedYear;
+                updateUI();
+            }
+        };
+
+        const loadFromBundle = async () => {
+            if (typeof OSPOS_DATA_BUNDLE === 'undefined') return;
+            
+            console.log("Loading data from static bundle...");
+
+            // Only load from bundle if local state is empty (preserves AI changes)
+            if (state.data.length === 0 && OSPOS_DATA_BUNDLE.sales_data) {
+                await processBundleData(OSPOS_DATA_BUNDLE);
+            }
+        };
+
+        window.onload = async () => {
+            await initDB();
+            AI.init(state);
+            
+            state.data = await loadFromDB(); // Try loading from persistent DB first
+            await loadFromBundle(); // Only loads from file if DB was empty
+            
+            if (state.data.length) {
+                const yrs = [...new Set(state.data.map(d => d.sale_year))].sort((a,b) => b-a);
+                document.getElementById('year-select').innerHTML = '<option value="all">Lifetime Combined</option>' + yrs.map(y => `<option value="${y}">${y}</option>`).join('');
+                document.getElementById('year-select').value = state.selectedYear;
+                document.getElementById('treemap-theme').value = state.treemapTheme;
+                document.getElementById('hero-chart-type').value = state.heroChartType;
+                document.getElementById('top-x-input').value = state.topX;
+                document.getElementById('scatter-norm-method').value = state.scatterNormalization;
+                document.getElementById('pareto-top-x-input').value = state.paretoTopX;
+                updateUI();
+            } else { lucide.createIcons(); }
+        };
+    </script>
+</body>
+</html>
